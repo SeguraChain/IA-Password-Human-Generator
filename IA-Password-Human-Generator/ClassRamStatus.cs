@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 
 
-namespace IA_Mot_De_Passe_Humain_Projet
+namespace IA_Password_Human_Generator
 {
     public class ClassRamStatus
     {

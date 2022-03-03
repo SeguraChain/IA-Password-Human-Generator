@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Console = System.Console;
 
-namespace IA_Mot_De_Passe_Humain_Projet
+namespace IA_Password_Human_Generator
 {
 
     class Program
@@ -21,7 +21,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
         /// <summary>
         /// Report of the password.
         /// </summary>
-        private static AIPasswordData _aiPasswordDataObject;
+        private static AIPasswordData _iaPasswordDataObject;
 
         /// <summary>
         /// Task.
@@ -38,7 +38,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
         /// Settings.
         /// </summary>
         private const string BaseDirectoryPath = "Base\\";
-        private const string DictionaryPath = "Dictionnaire\\";
+        private const string DictionaryPath = "Dictionary\\";
         private const string TmpDirectory = "tmp\\";
         private const int MininumCharacter = 7;
         private const int MaxTaskReadFile = 3;
@@ -222,7 +222,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
         /// </summary>
         private static void BuildAiPasswordRapportData()
         {
-            _aiPasswordDataObject = new AIPasswordData();
+            _iaPasswordDataObject = new AIPasswordData();
             Console.WriteLine("Choose the file who contain passwords:");
 
             string fichier = Console.ReadLine() ?? string.Empty;
@@ -274,11 +274,11 @@ namespace IA_Mot_De_Passe_Humain_Projet
                 CloseTaskFileRead();
 
 
-                _aiPasswordDataObject.TotalPassword = _currentFileLineRead;
+                _iaPasswordDataObject.TotalPassword = _currentFileLineRead;
                 Console.WriteLine("Total password passed(s): " + _currentFileLineRead);
                 Console.WriteLine("Save of the report in progress..");
                 using (StreamWriter writer = new StreamWriter("ia-data-password-generated-" + DateTimeOffset.Now.ToUnixTimeSeconds() + ".json"))
-                    writer.Write(JsonConvert.SerializeObject(_aiPasswordDataObject, Formatting.Indented));
+                    writer.Write(JsonConvert.SerializeObject(_iaPasswordDataObject, Formatting.Indented));
 
 
                 Console.WriteLine("Check of the file: " + fichier + " done. Report saved.");
@@ -291,7 +291,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
         private static SemaphoreSlim semaphoreWritePassword = new SemaphoreSlim(1, 1);
 
         /// <summary>
-        /// Génère des mots de passes en fonction d'un rapport.
+        /// Generate passwords from datas of a report.
         /// </summary>
         private static void BuildPasswordFromAiRapportData()
         {
@@ -302,9 +302,9 @@ namespace IA_Mot_De_Passe_Humain_Projet
             {
                 Console.WriteLine("Load of the report done..");
 
-                _aiPasswordDataObject = JsonConvert.DeserializeObject<AIPasswordData>(string.Concat(File.ReadAllLines(chemin)));
+                _iaPasswordDataObject = JsonConvert.DeserializeObject<AIPasswordData>(string.Concat(File.ReadAllLines(chemin)));
 
-                if (_aiPasswordDataObject == null)
+                if (_iaPasswordDataObject == null)
                     Console.WriteLine("The file: " + chemin + " is empty or invalid, can't use the report content of this file.");
                 else
                 {
@@ -404,15 +404,15 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
                     #endregion
 
-                    #region Génération des taux de pourcentage des longueurs de mot de passe.
+                    #region Generation of percentage rates of password lengths.
 
                     Dictionary<decimal, decimal> dictionaryPasswordLengthPercent = new Dictionary<decimal, decimal>();
 
-                    decimal sumOfLength = _aiPasswordDataObject.PasswordLengthRank.Sum(k => k.Value);
+                    decimal sumOfLength = _iaPasswordDataObject.PasswordLengthRank.Sum(k => k.Value);
 
                     Debug.WriteLine("Max character sum of length: " + sumOfLength);
 
-                    foreach (var rank in _aiPasswordDataObject.PasswordLengthRank)
+                    foreach (var rank in _iaPasswordDataObject.PasswordLengthRank)
                     {
                         decimal percent = 0;
 
@@ -427,15 +427,15 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
                     #endregion
 
-                    #region Génération des taux de pourcentage d'utilisations des caractères de mot de passe.
+                    #region Generating percentage usage rates of password characters.
 
                     Dictionary<char, decimal> dictionaryPasswordCharacterPercent = new Dictionary<char, decimal>();
 
-                    decimal sumOfPasswordCharacterLength = _aiPasswordDataObject.PasswordCharacterRank.Values.Sum(k => k);
+                    decimal sumOfPasswordCharacterLength = _iaPasswordDataObject.PasswordCharacterRank.Values.Sum(k => k);
 
                     Debug.WriteLine("Sum of password character length: " + sumOfPasswordCharacterLength);
 
-                    foreach (var rank in _aiPasswordDataObject.PasswordCharacterRank)
+                    foreach (var rank in _iaPasswordDataObject.PasswordCharacterRank)
                     {
                         decimal percent = 0;
 
@@ -452,11 +452,11 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
                     #endregion
 
-                    #region Génération des taux de pourcentage d'utilisation de caractères de mot de passe en fonction de la position.
+                    #region Generating position-based password character usage percentage rates.
 
                     Dictionary<decimal, Dictionary<char, decimal>> dictionaryPasswordCharacterPositionPercent = new Dictionary<decimal, Dictionary<char, decimal>>();
 
-                    foreach (var posRank in _aiPasswordDataObject.PasswordPosRank)
+                    foreach (var posRank in _iaPasswordDataObject.PasswordPosRank)
                     {
                         dictionaryPasswordCharacterPositionPercent.Add(posRank.Key, new Dictionary<char, decimal>());
 
@@ -479,7 +479,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
                     #endregion
 
-                    #region Création du premier fichier temporaire et de dossier contenant ceci.
+                    #region Creating the first temporary file and folder containing this.
 
                     Console.WriteLine("Generation of percentage stats based on completed report.");
 
@@ -522,7 +522,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                 while (totalToDo > 0)
                                 {
 
-                                    #region Selection of the length of the password to be generated.
+                                    #region Select the length of the password to be generated.
 
                                     int passwordLengthSelected = 0;
 
@@ -753,7 +753,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
         private static void RemoveDuplicateLineFromFile()
         {
             Console.WriteLine("Enter the path of the file to process: ");
-            string fichier = Console.ReadLine();
+            string file = Console.ReadLine();
 
             Console.WriteLine("Enter the save path: ");
             string sauvegarde = Console.ReadLine();
@@ -764,7 +764,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
             Console.WriteLine("Enter the path to merge temporary files (Useful to lighten the load of a hard disk):");
             string tempBigMerge = Console.ReadLine();
 
-            if (File.Exists(fichier))
+            if (File.Exists(file))
             {
 
                 bool continueSort = false;
@@ -818,21 +818,21 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
                     listeFichierTemporaire.Add(temp + "\\temp-" + idFichierTemp + ".txt");
 
-                    Dictionary<int, StreamWriterObject> listeFichierStreamTemporaire = new Dictionary<int, StreamWriterObject>();
+                    Dictionary<int, StreamWriterObject> listFileStreamTemp = new Dictionary<int, StreamWriterObject>();
 
-                    listeFichierStreamTemporaire.Add(idFichierTemp, new StreamWriterObject()
+                    listFileStreamTemp.Add(idFichierTemp, new StreamWriterObject()
                     {
                         FileStreamWriter = new FileStream(listeFichierTemporaire[idFichierTemp], FileMode.Append, FileAccess.Write, FileShare.Read),
                         FileStreamReader = new FileStream(listeFichierTemporaire[idFichierTemp], FileMode.Open, FileAccess.Read, FileShare.ReadWrite),
                         Total = 0
                     });
 
-                    listeFichierStreamTemporaire[idFichierTemp].StreamWriter = new StreamWriter(listeFichierStreamTemporaire[idFichierTemp].FileStreamWriter);
-                    listeFichierStreamTemporaire[idFichierTemp].StreamReader = new StreamReader(listeFichierStreamTemporaire[idFichierTemp].FileStreamReader);
+                    listFileStreamTemp[idFichierTemp].StreamWriter = new StreamWriter(listFileStreamTemp[idFichierTemp].FileStreamWriter);
+                    listFileStreamTemp[idFichierTemp].StreamReader = new StreamReader(listFileStreamTemp[idFichierTemp].FileStreamReader);
 
                     Dictionary<string, int> dictionaryTmpRead = new Dictionary<string, int>();
 
-                    using (StreamReader reader = new StreamReader(fichier))
+                    using (StreamReader reader = new StreamReader(file))
                     {
                         string ligne;
 
@@ -840,24 +840,24 @@ namespace IA_Mot_De_Passe_Humain_Projet
                         {
                             if (!dictionaryTmpRead.ContainsKey(ligne))
                             {
-                                listeFichierStreamTemporaire[idFichierTemp].StreamWriter.WriteLine(ligne);
-                                listeFichierStreamTemporaire[idFichierTemp].Total++;
+                                listFileStreamTemp[idFichierTemp].StreamWriter.WriteLine(ligne);
+                                listFileStreamTemp[idFichierTemp].Total++;
                                 dictionaryTmpRead.Add(ligne, 0);
 
-                                if (listeFichierStreamTemporaire[idFichierTemp].Total >= MaxLignePerFile)
+                                if (listFileStreamTemp[idFichierTemp].Total >= MaxLignePerFile)
                                 {
                                     idFichierTemp++;
                                     dictionaryTmpRead.Clear();
                                     listeFichierTemporaire.Add(temp + "\\temp-" + idFichierTemp + ".txt");
-                                    listeFichierStreamTemporaire.Add(idFichierTemp, new StreamWriterObject()
+                                    listFileStreamTemp.Add(idFichierTemp, new StreamWriterObject()
                                     {
                                         FileStreamWriter = new FileStream(listeFichierTemporaire[idFichierTemp], FileMode.Append, FileAccess.Write, FileShare.Read),
                                         FileStreamReader = new FileStream(listeFichierTemporaire[idFichierTemp], FileMode.Open, FileAccess.Read, FileShare.ReadWrite),
                                         Total = 0
                                     });
 
-                                    listeFichierStreamTemporaire[idFichierTemp].StreamWriter = new StreamWriter(listeFichierStreamTemporaire[idFichierTemp].FileStreamWriter);
-                                    listeFichierStreamTemporaire[idFichierTemp].StreamReader = new StreamReader(listeFichierStreamTemporaire[idFichierTemp].FileStreamReader);
+                                    listFileStreamTemp[idFichierTemp].StreamWriter = new StreamWriter(listFileStreamTemp[idFichierTemp].FileStreamWriter);
+                                    listFileStreamTemp[idFichierTemp].StreamReader = new StreamReader(listFileStreamTemp[idFichierTemp].FileStreamReader);
 
                                 }
                             }
@@ -866,14 +866,14 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
                     dictionaryTmpRead.Clear();
 
-                    foreach (var streamWriterObject in listeFichierStreamTemporaire)
+                    foreach (var streamWriterObject in listFileStreamTemp)
                     {
-                        listeFichierStreamTemporaire[streamWriterObject.Key].StreamReader.Close();
-                        listeFichierStreamTemporaire[streamWriterObject.Key].StreamWriter.Close();
-                        listeFichierStreamTemporaire[streamWriterObject.Key].FileStreamReader.Close();
-                        listeFichierStreamTemporaire[streamWriterObject.Key].FileStreamWriter.Close();
+                        listFileStreamTemp[streamWriterObject.Key].StreamReader.Close();
+                        listFileStreamTemp[streamWriterObject.Key].StreamWriter.Close();
+                        listFileStreamTemp[streamWriterObject.Key].FileStreamReader.Close();
+                        listFileStreamTemp[streamWriterObject.Key].FileStreamWriter.Close();
                     }
-                    Console.WriteLine("Temporary file created successfully. Total: " + listeFichierStreamTemporaire.Count);
+                    Console.WriteLine("Temporary file created successfully. Total: " + listFileStreamTemp.Count);
 
                 }
                 else
@@ -1027,7 +1027,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
             }
             else
             {
-                Console.WriteLine("The file: " + fichier + " not exist.");
+                Console.WriteLine("The file: " + file + " not exist.");
             }
         }
 
@@ -1087,7 +1087,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
         }
 
         /// <summary>
-        /// Corrige les lignes de mot de passes, convertit les lignes qui sont au format HEX en string avec le meilleur encoding possible.
+        /// Fix password lines, convert lines that are in HEX format to string with the best possible encoding.
         /// </summary>
         private static void CorrectPasswordList()
         {
@@ -1120,16 +1120,16 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
             Console.WriteLine("Ongoing treatment..");
 
-            long totalLigneLu = 0;
-            long totalModifier = 0;
+            long totalReadLine = 0;
+            long totalEdited = 0;
             bool finish = false;
 
             Task.Factory.StartNew(async () =>
             {
                 while (!finish)
                 {
-                    Debug.WriteLine("Total rows processed: " + totalLigneLu + "/" + TotalLineFile);
-                    Debug.WriteLine("Total Rows Modified: " + totalModifier + "/" + TotalLineFile);
+                    Debug.WriteLine("Total rows processed: " + totalReadLine + "/" + TotalLineFile);
+                    Debug.WriteLine("Total Rows Modified: " + totalEdited + "/" + TotalLineFile);
 
                     await Task.Delay(1000);
                 }
@@ -1316,7 +1316,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                         {
                                                                                             if (!listPass.Contains(line))
                                                                                             {
-                                                                                                totalLigneLu++;
+                                                                                                totalReadLine++;
                                                                                                 writer.WriteLine(line);
                                                                                                 listPass.Add(line);
                                                                                                 if (listPass.Count >= 2000000)
@@ -1335,7 +1335,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                         {
                                                                                             if (CheckWord(line))
                                                                                             {
-                                                                                                totalLigneLu++;
+                                                                                                totalReadLine++;
                                                                                                 writer.WriteLine(line);
                                                                                                 listPass.Add(line);
                                                                                                 if (listPass.Count >= 2000000)
@@ -1369,7 +1369,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                             {
                                                                                                 if (!listPass.Contains(newLine))
                                                                                                 {
-                                                                                                    totalLigneLu++;
+                                                                                                    totalReadLine++;
                                                                                                     writer.WriteLine(newLine);
                                                                                                     listPass.Add(newLine);
                                                                                                     if (listPass.Count >= 2000000)
@@ -1387,7 +1387,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                                 {
                                                                                                     if (!listPass.Contains(newLine))
                                                                                                     {
-                                                                                                        totalLigneLu++;
+                                                                                                        totalReadLine++;
                                                                                                         writer.WriteLine(newLine);
                                                                                                         listPass.Add(newLine);
                                                                                                         if (listPass.Count >= 2000000)
@@ -1439,7 +1439,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                     {
                                                                         if (lineTmp != line)
                                                                         {
-                                                                            totalModifier++;
+                                                                            totalEdited++;
                                                                             writerEdited.WriteLine(lineTmp);
                                                                         }
                                                                         line = lineTmp;
@@ -1459,7 +1459,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                     {
                                                                                         if (!listPass.Contains(line))
                                                                                         {
-                                                                                            totalLigneLu++;
+                                                                                            totalReadLine++;
                                                                                             writer.WriteLine(line);
                                                                                             listPass.Add(line);
                                                                                             if (listPass.Count >= 2000000)
@@ -1478,7 +1478,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                     {
                                                                                         if (!listPass.Contains(line))
                                                                                         {
-                                                                                            totalLigneLu++;
+                                                                                            totalReadLine++;
                                                                                             writer.WriteLine(line);
                                                                                             listPass.Add(line);
                                                                                             if (listPass.Count >= 2000000)
@@ -1517,7 +1517,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                         {
                                                                                             if (!listPass.Contains(newLine))
                                                                                             {
-                                                                                                totalLigneLu++;
+                                                                                                totalReadLine++;
                                                                                                 writer.WriteLine(newLine);
                                                                                                 listPass.Add(newLine);
                                                                                                 if (listPass.Count >= 2000000)
@@ -1536,7 +1536,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                         {
                                                                                             if (!listPass.Contains(newLine))
                                                                                             {
-                                                                                                totalLigneLu++;
+                                                                                                totalReadLine++;
                                                                                                 writer.WriteLine(newLine);
                                                                                                 listPass.Add(newLine);
                                                                                                 if (listPass.Count >= 2000000)
@@ -1599,7 +1599,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                         }
 
                                                         writer.WriteLine(splitedLine[1]);
-                                                        totalModifier++;
+                                                        totalEdited++;
                                                     }
                                                 }
                                             }
@@ -1614,7 +1614,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                 {
                                     writerInvalid.WriteLine(line);
                                 }
-                                totalLigneLu++;
+                                totalReadLine++;
                             }
                         }
                     }
@@ -1639,71 +1639,71 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
             Console.WriteLine("Enter the path and name of the final file to save: ");
 
-            string cheminFichierSave = Console.ReadLine();
+            string pathFileSave = Console.ReadLine();
 
             Console.WriteLine("Enter the path of files containing potentially valid lines: ");
 
-            string cheminFichierPotentielSave = Console.ReadLine();
+            string pathFilePotentialSave = Console.ReadLine();
 
-            string[] fichiers = Directory.GetFiles(cheminFichiers, "*", SearchOption.AllDirectories);
+            string[] files = Directory.GetFiles(cheminFichiers, "*", SearchOption.AllDirectories);
 
-            long totalLigneLu = 0;
-            long totalLigneIgnorer = 0;
-            int totalFichierLu = 0;
+            long totalLineRead = 0;
+            long totalLineIgnored = 0;
+            int totalFileRead = 0;
             bool finish = false;
 
             Task.Factory.StartNew(async () =>
             {
                 while (!finish)
                 {
-                    Debug.WriteLine("Total lines read: " + totalLigneLu + " from the " + fichiers.Length + " file.");
-                    Debug.WriteLine("Total files read: " + totalFichierLu + " from the " + fichiers.Length + " file.");
-                    Debug.WriteLine("Total lines ignored: "+totalLigneIgnorer);
+                    Debug.WriteLine("Total lines read: " + totalLineRead + " from the " + files.Length + " file.");
+                    Debug.WriteLine("Total files read: " + totalFileRead + " from the " + files.Length + " file.");
+                    Debug.WriteLine("Total lines ignored: "+totalLineIgnored);
                     await Task.Delay(1000);
                 }
             }).ConfigureAwait(false);
 
-            bool simpleFusion = false;
+            bool simpleMerge = false;
 
             Console.WriteLine("Proceed to a simple merge? [Y/N]");
 
-            simpleFusion = (Console.ReadLine() ?? string.Empty).ToLower() == "y";
+            simpleMerge = (Console.ReadLine() ?? string.Empty).ToLower() == "y";
 
-            Console.WriteLine("Merge of " + fichiers.Length + "..");
+            Console.WriteLine("Merge of " + files.Length + "..");
 
             UTF8Encoding utf8Encoding = new UTF8Encoding(false);
 
 
             Dictionary<string, int> blockDuplicateLines = new Dictionary<string, int>();
 
-            if (!simpleFusion)
+            if (!simpleMerge)
             {
-                int fichierPotentielId = 0;
-                using (StreamWriter writer = new StreamWriter(cheminFichierSave, false, utf8Encoding) { AutoFlush = true })
+                int potentialFileId = 0;
+                using (StreamWriter writer = new StreamWriter(pathFileSave, false, utf8Encoding) { AutoFlush = true })
                 {
 
-                    using (StreamWriter writerIgnored = new StreamWriter(cheminFichierSave + "-ignored-file.txt", false, utf8Encoding) { AutoFlush = true })
+                    using (StreamWriter writerIgnored = new StreamWriter(pathFileSave + "-ignored-file.txt", false, utf8Encoding) { AutoFlush = true })
                     {
-                        using (StreamWriter writerIgnoredLine = new StreamWriter(cheminFichierSave + "-ignored-line.txt", false, utf8Encoding) { AutoFlush = true })
+                        using (StreamWriter writerIgnoredLine = new StreamWriter(pathFileSave + "-ignored-line.txt", false, utf8Encoding) { AutoFlush = true })
                         {
-                            foreach (var fichier in fichiers)
+                            foreach (var file in files)
                             {
-                                fichierPotentielId++;
+                                potentialFileId++;
 
-                                Console.WriteLine("Handle the file " + fichier + " in pending..");
+                                Console.WriteLine("Handle the file " + file + " in pending..");
 
 
-                                string fichierPotential = cheminFichierPotentielSave + "\\" + fichierPotentielId + "-potential.txt";
-                                long totalPotentielEcrit = 0;
+                                string potentialFile = pathFilePotentialSave + "\\" + potentialFileId + "-potential.txt";
+                                long totalPotentialWritten = 0;
 
-                                using (StreamWriter writerPotential = new StreamWriter(fichierPotential, false, utf8Encoding) { AutoFlush = true })
+                                using (StreamWriter writerPotential = new StreamWriter(potentialFile, false, utf8Encoding) { AutoFlush = true })
                                 {
-                                    bool ignored = fichier.Contains("[HASH]") && (!fichier.Contains("[NOHASH]") && !fichier.Contains("[NOTHASH]"));
+                                    bool ignored = file.Contains("[HASH]") && (!file.Contains("[NOHASH]") && !file.Contains("[NOTHASH]"));
 
                                     if (!ignored)
                                     {
 
-                                        using (StreamReader reader = new StreamReader(fichier))
+                                        using (StreamReader reader = new StreamReader(file))
                                         {
                                             string line;
 
@@ -1999,7 +1999,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                                                                         if (!valid)
                                                                                                                                         {
                                                                                                                                             writerPotential.WriteLine(copy);
-                                                                                                                                            totalPotentielEcrit++;
+                                                                                                                                            totalPotentialWritten++;
                                                                                                                                         }
                                                                                                                                     }
                                                                                                                                     else
@@ -2023,8 +2023,8 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
                                                                                         if (ignoreHex)
                                                                                         {
-                                                                                            totalLigneIgnorer++;
-                                                                                            writerIgnoredLine.WriteLine(fichier + " ->" + line);
+                                                                                            totalLineIgnored++;
+                                                                                            writerIgnoredLine.WriteLine(file + " ->" + line);
                                                                                         }
                                                                                     }
                                                                                 }
@@ -2280,7 +2280,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                                                                 if (!valid)
                                                                                                                                 {
                                                                                                                                     writerPotential.WriteLine(lineCopy);
-                                                                                                                                    totalPotentielEcrit++;
+                                                                                                                                    totalPotentialWritten++;
                                                                                                                                 }
 
                                                                                                                             }
@@ -2411,8 +2411,8 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
                                                                                             if (!valid)
                                                                                             {
-                                                                                                totalLigneIgnorer++;
-                                                                                                writerIgnoredLine.WriteLine(fichier + " ->" + line);
+                                                                                                totalLineIgnored++;
+                                                                                                writerIgnoredLine.WriteLine(file + " ->" + line);
                                                                                             }
                                                                                         }
                                                                                     }
@@ -2701,7 +2701,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                                                                                                 if (!valid)
                                                                                                                 {
                                                                                                                     writerPotential.WriteLine(line);
-                                                                                                                    totalPotentielEcrit++;
+                                                                                                                    totalPotentialWritten++;
 
                                                                                                                 }
 
@@ -2831,8 +2831,8 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
                                                                             if (!valid)
                                                                             {
-                                                                                totalLigneIgnorer++;
-                                                                                writerIgnoredLine.WriteLine(fichier + " ->" + line);
+                                                                                totalLineIgnored++;
+                                                                                writerIgnoredLine.WriteLine(file + " ->" + line);
                                                                             }
                                                                         }
                                                                     }
@@ -2843,22 +2843,22 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
 
                                                 }
-                                                totalLigneLu++;
+                                                totalLineRead++;
 
                                             }
                                         }
 
-                                        totalFichierLu++;
+                                        totalFileRead++;
                                     }
                                     else
                                     {
-                                        Console.WriteLine("File ignored: " + fichier);
-                                        writerIgnored.WriteLine(fichier);
+                                        Console.WriteLine("File ignored: " + file);
+                                        writerIgnored.WriteLine(file);
                                     }
                                 }
 
-                                if (totalPotentielEcrit == 0)
-                                    File.Delete(fichierPotential);
+                                if (totalPotentialWritten == 0)
+                                    File.Delete(potentialFile);
                             }
                         }
 
@@ -2867,9 +2867,9 @@ namespace IA_Mot_De_Passe_Humain_Projet
             }
             else
             {
-                using (StreamWriter writer = new StreamWriter(cheminFichierSave, false, utf8Encoding) { AutoFlush = true })
+                using (StreamWriter writer = new StreamWriter(pathFileSave, false, utf8Encoding) { AutoFlush = true })
                 {
-                    foreach (var fichier in fichiers)
+                    foreach (var fichier in files)
                     {
 
                         using (StreamReader reader = new StreamReader(fichier, utf8Encoding))
@@ -2884,11 +2884,11 @@ namespace IA_Mot_De_Passe_Humain_Projet
                                     
                                     blockDuplicateLines.Add(line, 0);
                                     writer.WriteLine(line);
-                                    totalLigneLu++;
+                                    totalLineRead++;
                                 }
                             }
 
-                            totalFichierLu++;
+                            totalFileRead++;
                         }
                     }
                 }
@@ -2897,7 +2897,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
             blockDuplicateLines.Clear();
             finish = true;
 
-            Console.WriteLine("Merge of " + fichiers.Length + " files, ignored: " + totalLigneLu);
+            Console.WriteLine("Merge of " + files.Length + " files, ignored: " + totalLineRead);
             Console.WriteLine("Press a key to continue.");
 
             Console.ReadLine();
@@ -2910,7 +2910,7 @@ namespace IA_Mot_De_Passe_Humain_Projet
         {
             Console.WriteLine("Select the file to split: ");
 
-            string fichierSource = Console.ReadLine();
+            string sourceFile = Console.ReadLine();
 
             Console.WriteLine("Choose the amount of parts: ");
 
@@ -2918,14 +2918,14 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
             Console.WriteLine("Choose the path to save parts: ");
 
-            string dossierDestination = Console.ReadLine();
+            string destFolder = Console.ReadLine();
 
             Console.WriteLine("Choose the basename of parts: ");
 
-            string nomFichierPart = Console.ReadLine();
+            string fileNamePart = Console.ReadLine();
 
 
-            using (FileStream fs = File.Open(fichierSource, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream fs = File.Open(sourceFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             using (BufferedStream bs = new BufferedStream(fs, 8192))
             {
                 Console.WriteLine("Count the amount of lines, please wait..");
@@ -2936,31 +2936,31 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
             Console.WriteLine("Start to split the file..");
 
-            long nombreParPartie = TotalLineFile / part;
-            long totalEcrit = 0;
-            int idPartie = 1;
+            long numberPart = TotalLineFile / part;
+            long totalWritten = 0;
+            int partId = 1;
 
             UTF8Encoding utf8Encoding = new UTF8Encoding(false);
-            using (StreamReader reader = new StreamReader(fichierSource, utf8Encoding))
+            using (StreamReader reader = new StreamReader(sourceFile, utf8Encoding))
             {
                 string line;
 
-                StreamWriter writer = new StreamWriter(dossierDestination + "\\" + nomFichierPart + idPartie, false, utf8Encoding);
+                StreamWriter writer = new StreamWriter(destFolder + "\\" + fileNamePart + partId, false, utf8Encoding);
 
                 while ((line = reader.ReadLine()) != null)
                 {
                     writer.WriteLine(line);
 
-                    totalEcrit++;
-                    if (totalEcrit >= nombreParPartie)
+                    totalWritten++;
+                    if (totalWritten >= numberPart)
                     {
-                        if (idPartie + 1 < nombreParPartie)
+                        if (partId + 1 < numberPart)
                         {
-                            Debug.WriteLine("Fin de l'écriture du fichier ID: " + idPartie);
+                            Debug.WriteLine("Fin de l'écriture du fichier ID: " + partId);
                             writer.Close();
-                            idPartie++;
-                            totalEcrit = 0;
-                            writer = new StreamWriter(dossierDestination + "\\" + nomFichierPart + idPartie, false, utf8Encoding);
+                            partId++;
+                            totalWritten = 0;
+                            writer = new StreamWriter(destFolder + "\\" + fileNamePart + partId, false, utf8Encoding);
                         }
                     }
                 }
@@ -2972,50 +2972,50 @@ namespace IA_Mot_De_Passe_Humain_Projet
             Console.ReadLine();
         }
 
-        #region Fonctions dédiées à la génération des rapports de mots de passe.
+        #region Functions dedicated to the generation of password reports.
 
-        private static void ReadPasswordLine(string ligne)
+        private static void ReadPasswordLine(string line)
         {
             try
             {
-                ligne = Regex.Replace(ligne, @"[^\u0000-\u007F]", string.Empty);
+                line = Regex.Replace(line, @"[^\u0000-\u007F]", string.Empty);
 
-                if (ligne.Length > 0)
+                if (line.Length > 0)
                 {
-                    if (_aiPasswordDataObject.PasswordLengthRank.ContainsKey(ligne.Length))
-                        _aiPasswordDataObject.PasswordLengthRank[ligne.Length]++;
+                    if (_iaPasswordDataObject.PasswordLengthRank.ContainsKey(line.Length))
+                        _iaPasswordDataObject.PasswordLengthRank[line.Length]++;
                     else
-                        _aiPasswordDataObject.PasswordLengthRank.Add(ligne.Length, 1);
+                        _iaPasswordDataObject.PasswordLengthRank.Add(line.Length, 1);
                     
 
                     int pos = 0;
 
-                    for (int i = 0; i < ligne.Length; i++)
+                    for (int i = 0; i < line.Length; i++)
                     {
-                        if (i < ligne.Length)
+                        if (i < line.Length)
                         {
 
-                            if (_aiPasswordDataObject.PasswordCharacterRank.ContainsKey(ligne[i]))
-                                _aiPasswordDataObject.PasswordCharacterRank[ligne[i]]++;
+                            if (_iaPasswordDataObject.PasswordCharacterRank.ContainsKey(line[i]))
+                                _iaPasswordDataObject.PasswordCharacterRank[line[i]]++;
                             
                             else
-                                _aiPasswordDataObject.PasswordCharacterRank.Add(ligne[i], 1);
+                                _iaPasswordDataObject.PasswordCharacterRank.Add(line[i], 1);
                             
-                            if (_aiPasswordDataObject.PasswordPosRank.ContainsKey(pos))
+                            if (_iaPasswordDataObject.PasswordPosRank.ContainsKey(pos))
                             {
-                                if (_aiPasswordDataObject.PasswordPosRank[pos].ContainsKey(ligne[i]))
-                                    _aiPasswordDataObject.PasswordPosRank[pos][ligne[i]]++;
+                                if (_iaPasswordDataObject.PasswordPosRank[pos].ContainsKey(line[i]))
+                                    _iaPasswordDataObject.PasswordPosRank[pos][line[i]]++;
                                 else
-                                    _aiPasswordDataObject.PasswordPosRank[pos].Add(ligne[i], 1);
+                                    _iaPasswordDataObject.PasswordPosRank[pos].Add(line[i], 1);
                                 
                             }
                             else
                             {
-                                _aiPasswordDataObject.PasswordPosRank.Add(pos, new SortedDictionary<char, decimal>());
-                                if (_aiPasswordDataObject.PasswordPosRank[pos].ContainsKey(ligne[i]))
-                                    _aiPasswordDataObject.PasswordPosRank[pos][ligne[i]]++;
+                                _iaPasswordDataObject.PasswordPosRank.Add(pos, new SortedDictionary<char, decimal>());
+                                if (_iaPasswordDataObject.PasswordPosRank[pos].ContainsKey(line[i]))
+                                    _iaPasswordDataObject.PasswordPosRank[pos][line[i]]++;
                                 else
-                                    _aiPasswordDataObject.PasswordPosRank[pos].Add(ligne[i], 1);
+                                    _iaPasswordDataObject.PasswordPosRank[pos].Add(line[i], 1);
                             }
                             pos++;
                         }
@@ -3033,10 +3033,10 @@ namespace IA_Mot_De_Passe_Humain_Projet
 
         #endregion
 
-        #region Fonctions dédiés à l'affichage du statut de lecture des mots de passes.
+        #region Functions dedicated to displaying the read status of passwords.
 
         /// <summary>
-        /// Arrête la tâche d'affichage des mots de passes lus.
+        /// Stops the task of displaying read passwords.
         /// </summary>
         private static void CloseTaskFileRead()
         {
