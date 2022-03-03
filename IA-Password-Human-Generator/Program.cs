@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
@@ -271,20 +271,20 @@ namespace IA_Password_Human_Generator
 
                     Console.WriteLine("Load of the report done.");
 
-                    long quantiteMotDePasse = 0;
+                    long quantityPasswordTarget = 0;
 
                     Console.WriteLine("Please, input the quantity of valid password to generate: ");
                     string quantiteMotDePasseSaisie = Console.ReadLine() ?? string.Empty;
 
-                    while (quantiteMotDePasse <= 0)
+                    while (quantityPasswordTarget <= 0)
                     {
-                        while (!long.TryParse(quantiteMotDePasseSaisie, out quantiteMotDePasse))
+                        while (!long.TryParse(quantiteMotDePasseSaisie, out quantityPasswordTarget))
                         {
                             Console.WriteLine("Please, input the quantity of valid password to generate: ");
                             quantiteMotDePasseSaisie = Console.ReadLine() ?? string.Empty;
                         }
 
-                        if (quantiteMotDePasse <= 0)
+                        if (quantityPasswordTarget <= 0)
                         {
                             Console.WriteLine("The input quantity is invalid, the quantity need to be above 0.");
                             Console.WriteLine("Please, input the quantity of valid password to generate: ");
@@ -441,11 +441,11 @@ namespace IA_Password_Human_Generator
 
                     Console.WriteLine("Generation of percentage stats based on completed report.");
 
-                    Console.WriteLine("Generation of: " + quantiteMotDePasse + " password(s) according to the report..");
+                    Console.WriteLine("Generation of: " + quantityPasswordTarget + " password(s) according to the report..");
 
-                    string fichier = "password-list-" + DateTimeOffset.Now.ToUnixTimeSeconds() + ".txt";
+                    string file = "password-list-" + DateTimeOffset.Now.ToUnixTimeSeconds() + ".txt";
 
-                    File.Create(fichier).Close();
+                    File.Create(file).Close();
 
                     if (!Directory.Exists(TmpDirectory))
                         Directory.CreateDirectory(TmpDirectory);
@@ -453,7 +453,7 @@ namespace IA_Password_Human_Generator
                     int currentFileStreamIndex = 0;
 
                     fileStreamDictionnary.Add(currentFileStreamIndex, new FileStreamObject());
-                    fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + fichier + currentFileStreamIndex;
+                    fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + file + currentFileStreamIndex;
                     File.Create(fileStreamDictionnary[currentFileStreamIndex].NameFile).Close();
                     fileStreamDictionnary[currentFileStreamIndex].FileStreamWriter = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Append, FileAccess.Write, FileShare.Read);
                     fileStreamDictionnary[currentFileStreamIndex].FileStreamReader = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -464,7 +464,7 @@ namespace IA_Password_Human_Generator
 
                     #region Max Stats.
 
-                    long totalToDo = quantiteMotDePasse;
+                    long totalToDo = quantityPasswordTarget;
 
                     decimal maxPasswordLengthValue = dictionaryPasswordLengthPercent.Values.Max();
                     decimal maxPasswordCharacterValue = dictionaryPasswordCharacterPercent.Values.Max();
@@ -577,9 +577,6 @@ namespace IA_Password_Human_Generator
                                                     fileStreamDictionnary[currentFileStreamIndex].ListWord.Add(passwordGenerated);
                                                     fileStreamDictionnary[currentFileStreamIndex].Total++;
 
-#if DEBUG
-                                                    Debug.WriteLine("Total passwords generated on current index: " + fileStreamDictionnary[currentFileStreamIndex].Total + " | total to do: " + totalToDo);
-#endif
 
                                                     if (fileStreamDictionnary[currentFileStreamIndex].Total >= MaxLignePerFileGenerated)
                                                     {
@@ -596,7 +593,7 @@ namespace IA_Password_Human_Generator
 
                                                                 currentFileStreamIndex++;
                                                                 fileStreamDictionnary.Add(currentFileStreamIndex, new FileStreamObject());
-                                                                fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + fichier + currentFileStreamIndex;
+                                                                fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + file + currentFileStreamIndex;
                                                                 File.Create(fileStreamDictionnary[currentFileStreamIndex].NameFile).Close();
                                                                 fileStreamDictionnary[currentFileStreamIndex].FileStreamWriter = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Append, FileAccess.Write, FileShare.Read);
                                                                 fileStreamDictionnary[currentFileStreamIndex].FileStreamReader = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -618,11 +615,6 @@ namespace IA_Password_Human_Generator
                                                 fileStreamDictionnary[currentFileStreamIndex].StreamWriter.WriteLine(passwordGenerated);
                                                 fileStreamDictionnary[currentFileStreamIndex].Total++;
 
-
-#if DEBUG
-                                                Debug.WriteLine("Total passwords generated on current index: " + fileStreamDictionnary[currentFileStreamIndex].Total + " | total to do: " + totalToDo);
-#endif
-
                                                 if (fileStreamDictionnary[currentFileStreamIndex].Total >= MaxLignePerFileGenerated)
                                                 {
                                                     try
@@ -638,7 +630,7 @@ namespace IA_Password_Human_Generator
 
                                                             currentFileStreamIndex++;
                                                             fileStreamDictionnary.Add(currentFileStreamIndex, new FileStreamObject());
-                                                            fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + fichier + currentFileStreamIndex;
+                                                            fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + file + currentFileStreamIndex;
                                                             File.Create(fileStreamDictionnary[currentFileStreamIndex].NameFile).Close();
                                                             fileStreamDictionnary[currentFileStreamIndex].FileStreamWriter = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Append, FileAccess.Write, FileShare.Read);
                                                             fileStreamDictionnary[currentFileStreamIndex].FileStreamReader = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -664,39 +656,41 @@ namespace IA_Password_Human_Generator
                         }
                     }
 
-                    new Thread(() =>
+
+                    while (totalToDo > 0)
                     {
-                        while (totalToDo > 0)
-                            Thread.Sleep(1000);
+                        Console.WriteLine("Passwords generated: "+(quantityPasswordTarget-totalToDo)+"/"+quantityPasswordTarget);
+                        Thread.Sleep(1000);
+                        Console.Clear();
+                    }
 
-                        Console.WriteLine("List of password(s) successfully generated. Merging files in progress..");
+                    Console.WriteLine("List of password(s) successfully generated. Merging files in progress..");
 
-                        using (StreamWriter writer = new StreamWriter(fichier) { AutoFlush = true })
+                    using (StreamWriter writer = new StreamWriter(file) { AutoFlush = true })
+                    {
+                        foreach (var streamObject in fileStreamDictionnary)
                         {
-                            foreach (var streamObject in fileStreamDictionnary)
-                            {
-                                string ligne;
+                            string line;
 
-                                fileStreamDictionnary[streamObject.Key].StreamReader.BaseStream.Seek(0, SeekOrigin.Begin);
-                                fileStreamDictionnary[streamObject.Key].StreamReader.BaseStream.Position = 0;
+                            fileStreamDictionnary[streamObject.Key].StreamReader.BaseStream.Seek(0, SeekOrigin.Begin);
+                            fileStreamDictionnary[streamObject.Key].StreamReader.BaseStream.Position = 0;
 
-                                while ((ligne = fileStreamDictionnary[streamObject.Key].StreamReader.ReadLine()) != null)
-                                    writer.WriteLine(ligne);
+                            while ((line = fileStreamDictionnary[streamObject.Key].StreamReader.ReadLine()) != null)
+                                writer.WriteLine(line);
 
-                                fileStreamDictionnary[streamObject.Key].StreamReader.Close();
-                                fileStreamDictionnary[streamObject.Key].StreamWriter.Close();
-                                fileStreamDictionnary[streamObject.Key].FileStreamReader.Close();
-                                fileStreamDictionnary[streamObject.Key].FileStreamWriter.Close();
-                                File.Delete(fileStreamDictionnary[streamObject.Key].NameFile);
-                            }
+                            fileStreamDictionnary[streamObject.Key].StreamReader.Close();
+                            fileStreamDictionnary[streamObject.Key].StreamWriter.Close();
+                            fileStreamDictionnary[streamObject.Key].FileStreamReader.Close();
+                            fileStreamDictionnary[streamObject.Key].FileStreamWriter.Close();
+                            File.Delete(fileStreamDictionnary[streamObject.Key].NameFile);
                         }
+                    }
 
-                        watchStopwatch.Stop();
+                    watchStopwatch.Stop();
 
-                        Console.WriteLine("File(s) merged successfully. Total generated passwords: " + quantiteMotDePasse);
-                        Console.WriteLine("Timespent: " + watchStopwatch.ElapsedMilliseconds / 1000 + " second(s).");
+                    Console.WriteLine("File(s) merged successfully. Total generated passwords: " + quantityPasswordTarget);
+                    Console.WriteLine("Timespent: " + watchStopwatch.ElapsedMilliseconds / 1000 + " second(s).");
 
-                    }).Start();
                 }
             }
             else
@@ -714,7 +708,7 @@ namespace IA_Password_Human_Generator
             string file = Console.ReadLine();
 
             Console.WriteLine("Enter the save path: ");
-            string sauvegarde = Console.ReadLine();
+            string fileSavePath = Console.ReadLine();
 
             Console.WriteLine("Enter the temporary path:");
             string temp = Console.ReadLine();
@@ -922,13 +916,13 @@ namespace IA_Password_Human_Generator
                 Console.WriteLine("Merging temporary files in progress..");
 
 
-                File.Create(sauvegarde).Close();
+                File.Create(fileSavePath).Close();
 
-                long totalLigne = 0;
+                long totalLines = 0;
 
-                using (var fileStreamWriterSave = new FileStream(sauvegarde, FileMode.Append, FileAccess.Write, FileShare.Read))
+                using (var fileStreamWriterSave = new FileStream(fileSavePath, FileMode.Append, FileAccess.Write, FileShare.Read))
                 {
-                    using (var fileStreamReaderSave = new FileStream(sauvegarde, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var fileStreamReaderSave = new FileStream(fileSavePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
                         using (StreamReader readerSave = new StreamReader(fileStreamReaderSave))
                         {
@@ -959,7 +953,7 @@ namespace IA_Password_Human_Generator
 
                                         if (!existe)
                                         {
-                                            totalLigne++;
+                                            totalLines++;
                                             writerSave.WriteLine(ligne);
                                         }
                                     }
@@ -970,7 +964,7 @@ namespace IA_Password_Human_Generator
                     }
                 }
 
-                Console.WriteLine("File processed successfully. Total unique rows saved: " + totalLigne);
+                Console.WriteLine("File processed successfully. Total unique rows saved: " + totalLines);
 
                 Console.WriteLine("Do you want to delete the temporary ones? [Y/N]");
 
