@@ -10,4 +10,4 @@ The program is slow depending of the report generated and the base list used for
 is necessary to gain more performances.
 
 
-![IAReport](https://user-images.githubusercontent.com/96837446/157745146-373b811e-6a46-4228-8051-0632b0259d58.png)
+![IAReport](https://user-images.githubusercontent.com/96837446/157766436-261cd352-1d5c-45c2-9f19-bba64e876b2e.png)
