@@ -2,7 +2,7 @@
 
 Created in 2018-2019. Old code, not cleaned yet.
 
-Permit to use base list of words, generate reports from big dictionnary of passwords and generate passwords from "human" keywords.
+Permit to use base list of words, generate reports from a big dictionnary of passwords and generate passwords from "human" chooses.
 
 Can also parse, check, fix list of passwords.
 
