@@ -1,6 +1,6 @@
 # IA-Password-Human-Generator
 
-Created in 2018-2019. Old code, not cleaned yet.
+Created between 2018-2019. Old code, not really cleaned and optimized yet.
 
 Permit to use base list of words, generate reports from a big dictionnary of passwords and generate passwords from "human" chooses.
 
