@@ -1,8 +1,13 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -49,8 +54,15 @@ namespace IA_Password_Human_Generator
         /// </summary>
         public static long TotalLineFile;
 
+
+
+
+
         static void Main(string[] args)
         {
+
+            ClassRamStatus.EnableRamCounterTask();
+
             if (!Directory.Exists(AppContext.BaseDirectory + "\\" + TmpDirectory))
                 Directory.CreateDirectory(AppContext.BaseDirectory + "\\" + TmpDirectory);
 
@@ -96,7 +108,7 @@ namespace IA_Password_Human_Generator
                     Console.WriteLine("3. Erase duplicate lines from a list of password.");
                     Console.WriteLine("4. Erase too short password from a list (Edit the source code of the program if necessary).");
                     Console.WriteLine("5. Read lines of a file for fix them.");
-                    Console.WriteLine("6. Join file into a big one file.");
+                    Console.WriteLine("6. Join files into a big one file.");
                     Console.WriteLine("7. Cut a big a file into multiple files.");
                     Console.WriteLine("8. Close the program.");
                     choose = Console.ReadLine() ?? string.Empty;
@@ -260,24 +272,24 @@ namespace IA_Password_Human_Generator
                 else
                 {
 
-                    #region Read the report of password.
+                    #region Lecture rapport de mot de passe.
 
                     Console.WriteLine("Load of the report done.");
 
-                    long quantityPasswordTarget = 0;
+                    long quantiteMotDePasse = 0;
 
                     Console.WriteLine("Please, input the quantity of valid password to generate: ");
                     string quantiteMotDePasseSaisie = Console.ReadLine() ?? string.Empty;
 
-                    while (quantityPasswordTarget <= 0)
+                    while (quantiteMotDePasse <= 0)
                     {
-                        while (!long.TryParse(quantiteMotDePasseSaisie, out quantityPasswordTarget))
+                        while (!long.TryParse(quantiteMotDePasseSaisie, out quantiteMotDePasse))
                         {
                             Console.WriteLine("Please, input the quantity of valid password to generate: ");
                             quantiteMotDePasseSaisie = Console.ReadLine() ?? string.Empty;
                         }
 
-                        if (quantityPasswordTarget <= 0)
+                        if (quantiteMotDePasse <= 0)
                         {
                             Console.WriteLine("The input quantity is invalid, the quantity need to be above 0.");
                             Console.WriteLine("Please, input the quantity of valid password to generate: ");
@@ -434,11 +446,11 @@ namespace IA_Password_Human_Generator
 
                     Console.WriteLine("Generation of percentage stats based on completed report.");
 
-                    Console.WriteLine("Generation of: " + quantityPasswordTarget + " password(s) according to the report..");
+                    Console.WriteLine("Generation of: " + quantiteMotDePasse + " password(s) according to the report..");
 
-                    string file = "password-list-" + DateTimeOffset.Now.ToUnixTimeSeconds() + ".txt";
+                    string fichier = "password-list-" + DateTimeOffset.Now.ToUnixTimeSeconds() + ".txt";
 
-                    File.Create(file).Close();
+                    File.Create(fichier).Close();
 
                     if (!Directory.Exists(TmpDirectory))
                         Directory.CreateDirectory(TmpDirectory);
@@ -446,7 +458,7 @@ namespace IA_Password_Human_Generator
                     int currentFileStreamIndex = 0;
 
                     fileStreamDictionnary.Add(currentFileStreamIndex, new FileStreamObject());
-                    fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + file + currentFileStreamIndex;
+                    fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + fichier + currentFileStreamIndex;
                     File.Create(fileStreamDictionnary[currentFileStreamIndex].NameFile).Close();
                     fileStreamDictionnary[currentFileStreamIndex].FileStreamWriter = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Append, FileAccess.Write, FileShare.Read);
                     fileStreamDictionnary[currentFileStreamIndex].FileStreamReader = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -457,7 +469,7 @@ namespace IA_Password_Human_Generator
 
                     #region Max Stats.
 
-                    long totalToDo = quantityPasswordTarget;
+                    long totalToDo = quantiteMotDePasse;
 
                     decimal maxPasswordLengthValue = dictionaryPasswordLengthPercent.Values.Max();
                     decimal maxPasswordCharacterValue = dictionaryPasswordCharacterPercent.Values.Max();
@@ -477,7 +489,7 @@ namespace IA_Password_Human_Generator
 
                                     int passwordLengthSelected = 0;
 
-                                    decimal percentSelected = UtilityClass.GetRandomBetween(0, maxPasswordLengthValue);
+                                    decimal percentSelected = GetRandomBetween(0, maxPasswordLengthValue);
 
                                     while (passwordLengthSelected < MininumCharacter)
                                     {
@@ -490,7 +502,7 @@ namespace IA_Password_Human_Generator
                                             }
                                         }
 
-                                        percentSelected = UtilityClass.GetRandomBetween(0, maxPasswordLengthValue);
+                                        percentSelected = GetRandomBetween(0, maxPasswordLengthValue);
                                     }
 
                                     #endregion
@@ -508,10 +520,10 @@ namespace IA_Password_Human_Generator
 
                                             decimal maxPercent = dictionaryPasswordCharacterPositionPercent[dictionaryPasswordCharacterPositionPercent.Count - 1].Last().Value;
 
-                                            decimal percentCharacterSelect = UtilityClass.GetRandomBetween(0, maxPercent);
+                                            decimal percentCharacterSelect = GetRandomBetween(0, maxPercent);
 
                                             while (percentCharacterSelect == 0)
-                                                percentCharacterSelect = UtilityClass.GetRandomBetween(0, maxPercent);
+                                                percentCharacterSelect = GetRandomBetween(0, maxPercent);
 
                                             string characterSelectionner = string.Empty;
                                             foreach (var characterRank in dictionaryPasswordCharacterPercent)
@@ -532,7 +544,7 @@ namespace IA_Password_Human_Generator
                                                     {
                                                         accumulator = 0;
 
-                                                        decimal pourcentCharacterSelectPos = UtilityClass.GetRandomBetween(0m, 100m);
+                                                        decimal pourcentCharacterSelectPos = GetRandomBetween(0m, 100m);
 
                                                         foreach (var characterRank in dictionaryPasswordCharacterPositionPercent[passwordLengthSelected])
                                                         {
@@ -570,6 +582,9 @@ namespace IA_Password_Human_Generator
                                                     fileStreamDictionnary[currentFileStreamIndex].ListWord.Add(passwordGenerated);
                                                     fileStreamDictionnary[currentFileStreamIndex].Total++;
 
+#if DEBUG
+                                                    Debug.WriteLine("Total passwords generated on current index: " + fileStreamDictionnary[currentFileStreamIndex].Total + " | total to do: " + totalToDo);
+#endif
 
                                                     if (fileStreamDictionnary[currentFileStreamIndex].Total >= MaxLignePerFileGenerated)
                                                     {
@@ -586,7 +601,7 @@ namespace IA_Password_Human_Generator
 
                                                                 currentFileStreamIndex++;
                                                                 fileStreamDictionnary.Add(currentFileStreamIndex, new FileStreamObject());
-                                                                fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + file + currentFileStreamIndex;
+                                                                fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + fichier + currentFileStreamIndex;
                                                                 File.Create(fileStreamDictionnary[currentFileStreamIndex].NameFile).Close();
                                                                 fileStreamDictionnary[currentFileStreamIndex].FileStreamWriter = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Append, FileAccess.Write, FileShare.Read);
                                                                 fileStreamDictionnary[currentFileStreamIndex].FileStreamReader = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -608,6 +623,11 @@ namespace IA_Password_Human_Generator
                                                 fileStreamDictionnary[currentFileStreamIndex].StreamWriter.WriteLine(passwordGenerated);
                                                 fileStreamDictionnary[currentFileStreamIndex].Total++;
 
+
+#if DEBUG
+                                                Debug.WriteLine("Total passwords generated on current index: " + fileStreamDictionnary[currentFileStreamIndex].Total + " | total to do: " + totalToDo);
+#endif
+
                                                 if (fileStreamDictionnary[currentFileStreamIndex].Total >= MaxLignePerFileGenerated)
                                                 {
                                                     try
@@ -623,7 +643,7 @@ namespace IA_Password_Human_Generator
 
                                                             currentFileStreamIndex++;
                                                             fileStreamDictionnary.Add(currentFileStreamIndex, new FileStreamObject());
-                                                            fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + file + currentFileStreamIndex;
+                                                            fileStreamDictionnary[currentFileStreamIndex].NameFile = TmpDirectory + "\\" + fichier + currentFileStreamIndex;
                                                             File.Create(fileStreamDictionnary[currentFileStreamIndex].NameFile).Close();
                                                             fileStreamDictionnary[currentFileStreamIndex].FileStreamWriter = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Append, FileAccess.Write, FileShare.Read);
                                                             fileStreamDictionnary[currentFileStreamIndex].FileStreamReader = new FileStream(fileStreamDictionnary[currentFileStreamIndex].NameFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -649,45 +669,45 @@ namespace IA_Password_Human_Generator
                         }
                     }
 
-
-                    while (totalToDo > 0)
+                    new Thread(() =>
                     {
-                        Console.WriteLine("Passwords generated: "+(quantityPasswordTarget-totalToDo)+"/"+quantityPasswordTarget);
-                        Thread.Sleep(1000);
-                        Console.Clear();
-                    }
+                        while (totalToDo > 0)
+                            Thread.Sleep(1000);
 
-                    Console.WriteLine("List of password(s) successfully generated. Merging files in progress..");
+                        Console.WriteLine("List of password(s) successfully generated. Merging files in progress..");
 
-                    using (StreamWriter writer = new StreamWriter(file) { AutoFlush = true })
-                    {
-                        foreach (var streamObject in fileStreamDictionnary)
+                        using (StreamWriter writer = new StreamWriter(fichier) { AutoFlush = true })
                         {
-                            string line;
+                            foreach (var streamObject in fileStreamDictionnary)
+                            {
+                                string ligne;
 
-                            fileStreamDictionnary[streamObject.Key].StreamReader.BaseStream.Seek(0, SeekOrigin.Begin);
-                            fileStreamDictionnary[streamObject.Key].StreamReader.BaseStream.Position = 0;
+                                fileStreamDictionnary[streamObject.Key].StreamReader.BaseStream.Seek(0, SeekOrigin.Begin);
+                                fileStreamDictionnary[streamObject.Key].StreamReader.BaseStream.Position = 0;
 
-                            while ((line = fileStreamDictionnary[streamObject.Key].StreamReader.ReadLine()) != null)
-                                writer.WriteLine(line);
+                                while ((ligne = fileStreamDictionnary[streamObject.Key].StreamReader.ReadLine()) != null)
+                                    writer.WriteLine(ligne);
 
-                            fileStreamDictionnary[streamObject.Key].StreamReader.Close();
-                            fileStreamDictionnary[streamObject.Key].StreamWriter.Close();
-                            fileStreamDictionnary[streamObject.Key].FileStreamReader.Close();
-                            fileStreamDictionnary[streamObject.Key].FileStreamWriter.Close();
-                            File.Delete(fileStreamDictionnary[streamObject.Key].NameFile);
+                                fileStreamDictionnary[streamObject.Key].StreamReader.Close();
+                                fileStreamDictionnary[streamObject.Key].StreamWriter.Close();
+                                fileStreamDictionnary[streamObject.Key].FileStreamReader.Close();
+                                fileStreamDictionnary[streamObject.Key].FileStreamWriter.Close();
+                                File.Delete(fileStreamDictionnary[streamObject.Key].NameFile);
+                            }
                         }
-                    }
 
-                    watchStopwatch.Stop();
+                        watchStopwatch.Stop();
 
-                    Console.WriteLine("File(s) merged successfully. Total generated passwords: " + quantityPasswordTarget);
-                    Console.WriteLine("Timespent: " + watchStopwatch.ElapsedMilliseconds / 1000 + " second(s).");
+                        Console.WriteLine("File(s) merged successfully. Total generated passwords: " + quantiteMotDePasse);
+                        Console.WriteLine("Timespent: " + watchStopwatch.ElapsedMilliseconds / 1000 + " second(s).");
 
+                    }).Start();
                 }
             }
             else
+            {
                 Console.WriteLine("The file: " + chemin + " not exist.");
+            }
         }
 
         /// <summary>
@@ -699,7 +719,7 @@ namespace IA_Password_Human_Generator
             string file = Console.ReadLine();
 
             Console.WriteLine("Enter the save path: ");
-            string fileSavePath = Console.ReadLine();
+            string sauvegarde = Console.ReadLine();
 
             Console.WriteLine("Enter the temporary path:");
             string temp = Console.ReadLine();
@@ -834,7 +854,6 @@ namespace IA_Password_Human_Generator
                 if (!Directory.Exists(bigMerge))
                     Directory.CreateDirectory(bigMerge);
                 
-                ClassRamStatus.EnableRamCounterTask();
 
                 Dictionary<string, int> bigTrieDictionnary = new Dictionary<string, int>();
                 int countDictionnary = 0;
@@ -907,13 +926,13 @@ namespace IA_Password_Human_Generator
                 Console.WriteLine("Merging temporary files in progress..");
 
 
-                File.Create(fileSavePath).Close();
+                File.Create(sauvegarde).Close();
 
-                long totalLines = 0;
+                long totalLigne = 0;
 
-                using (var fileStreamWriterSave = new FileStream(fileSavePath, FileMode.Append, FileAccess.Write, FileShare.Read))
+                using (var fileStreamWriterSave = new FileStream(sauvegarde, FileMode.Append, FileAccess.Write, FileShare.Read))
                 {
-                    using (var fileStreamReaderSave = new FileStream(fileSavePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var fileStreamReaderSave = new FileStream(sauvegarde, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
                         using (StreamReader readerSave = new StreamReader(fileStreamReaderSave))
                         {
@@ -944,7 +963,7 @@ namespace IA_Password_Human_Generator
 
                                         if (!existe)
                                         {
-                                            totalLines++;
+                                            totalLigne++;
                                             writerSave.WriteLine(ligne);
                                         }
                                     }
@@ -955,7 +974,7 @@ namespace IA_Password_Human_Generator
                     }
                 }
 
-                Console.WriteLine("File processed successfully. Total unique rows saved: " + totalLines);
+                Console.WriteLine("File processed successfully. Total unique rows saved: " + totalLigne);
 
                 Console.WriteLine("Do you want to delete the temporary ones? [Y/N]");
 
@@ -1121,7 +1140,7 @@ namespace IA_Password_Human_Generator
                                                 {
 
 
-                                                    byte[] hexBytes = UtilityClass.GetByteArrayFromHexString(line);
+                                                    byte[] hexBytes = GetByteArrayFromHexString(line);
 
 
 
@@ -1164,12 +1183,12 @@ namespace IA_Password_Human_Generator
                                                                             try
                                                                             {
                                                                                 line = Encoding.GetEncoding("gb2312").GetString(hexBytes);
-                                                                                writerBadEncoding.WriteLine(line + " - " + UtilityClass.GetHexStringFromByteArray(hexBytes, 0, hexBytes.Length, true));
+                                                                                writerBadEncoding.WriteLine(line + " - " + GetHexStringFromByteArray(hexBytes, 0, hexBytes.Length, true));
                                                                             }
                                                                             catch
                                                                             {
                                                                                 line = Encoding.GetEncoding(1252).GetString(hexBytes);
-                                                                                writerBadEncoding.WriteLine(line + " - " + UtilityClass.GetHexStringFromByteArray(hexBytes, 0, hexBytes.Length, true));
+                                                                                writerBadEncoding.WriteLine(line + " - " + GetHexStringFromByteArray(hexBytes, 0, hexBytes.Length, true));
                                                                             }
                                                                         }
                                                                     }
@@ -1201,12 +1220,12 @@ namespace IA_Password_Human_Generator
                                                                             try
                                                                             {
                                                                                 line = Encoding.GetEncoding("gb2312").GetString(hexBytes);
-                                                                                writerBadEncoding.WriteLine(line + " - " + UtilityClass.GetHexStringFromByteArray(hexBytes, 0, hexBytes.Length, true));
+                                                                                writerBadEncoding.WriteLine(line + " - " + GetHexStringFromByteArray(hexBytes, 0, hexBytes.Length, true));
                                                                             }
                                                                             catch
                                                                             {
                                                                                 line = Encoding.GetEncoding(1252).GetString(hexBytes);
-                                                                                writerBadEncoding.WriteLine(line + " - " + UtilityClass.GetHexStringFromByteArray(hexBytes, 0, hexBytes.Length, true));
+                                                                                writerBadEncoding.WriteLine(line + " - " + GetHexStringFromByteArray(hexBytes, 0, hexBytes.Length, true));
                                                                             }
                                                                         }
                                                                     }
@@ -1230,7 +1249,7 @@ namespace IA_Password_Human_Generator
                                                         }
 
                                                         line = new string(line.Where(c => !char.IsControl(c)).ToArray());
-                                                        line = UtilityClass.RemoveControlCharacter(line);
+                                                        line = RemoveControlCharacter(line);
 
                                                         if (line.Length >= 4)
                                                         {
@@ -1238,9 +1257,9 @@ namespace IA_Password_Human_Generator
                                                             {
                                                                 if (!line.Contains("$HEX[") && !line.Contains("$hex["))
                                                                 {
-                                                                    if (UtilityClass.CheckWord(line))
+                                                                    if (CheckWord(line))
                                                                     {
-                                                                        if (!UtilityClass.IsEmail(line, out bool fixedLine, out string newLine))
+                                                                        if (!IsEmail(line, out bool fixedLine, out string newLine))
                                                                         {
                                                                             if (line.Length > 3)
                                                                             {
@@ -1253,9 +1272,9 @@ namespace IA_Password_Human_Generator
 
                                                                                 if (line.Length == 40 && line.Contains(".") || line.Length == 32)
                                                                                 {
-                                                                                    if (!UtilityClass.RegexHex.IsMatch(line.Substring(0, 32)))
+                                                                                    if (!_regexHex.IsMatch(line.Substring(0, 32)))
                                                                                     {
-                                                                                        if (UtilityClass.CheckWord(line))
+                                                                                        if (CheckWord(line))
                                                                                         {
                                                                                             if (!listPass.Contains(line))
                                                                                             {
@@ -1272,11 +1291,11 @@ namespace IA_Password_Human_Generator
                                                                                 }
                                                                                 else
                                                                                 {
-                                                                                    if (!UtilityClass.RegexHex.IsMatch(line))
+                                                                                    if (!_regexHex.IsMatch(line))
                                                                                     {
                                                                                         if (!listPass.Contains(line))
                                                                                         {
-                                                                                            if (UtilityClass.CheckWord(line))
+                                                                                            if (CheckWord(line))
                                                                                             {
                                                                                                 totalReadLine++;
                                                                                                 writer.WriteLine(line);
@@ -1297,7 +1316,7 @@ namespace IA_Password_Human_Generator
                                                                             {
                                                                                 if (newLine.Length > 3)
                                                                                 {
-                                                                                    if (UtilityClass.CheckWord(newLine))
+                                                                                    if (CheckWord(newLine))
                                                                                     {
                                                                                         newLine = new string(newLine.Where(c => !char.IsControl(c)).ToArray());
 
@@ -1308,7 +1327,7 @@ namespace IA_Password_Human_Generator
 
                                                                                         if (newLine.Length == 40 && newLine.Contains(".") || newLine.Length == 32)
                                                                                         {
-                                                                                            if (!UtilityClass.RegexHex.IsMatch(newLine.Substring(0, 32)))
+                                                                                            if (!_regexHex.IsMatch(newLine.Substring(0, 32)))
                                                                                             {
                                                                                                 if (!listPass.Contains(newLine))
                                                                                                 {
@@ -1324,9 +1343,9 @@ namespace IA_Password_Human_Generator
                                                                                         }
                                                                                         else
                                                                                         {
-                                                                                            if (!UtilityClass.RegexHex.IsMatch(newLine))
+                                                                                            if (!_regexHex.IsMatch(newLine))
                                                                                             {
-                                                                                                if (UtilityClass.CheckWord(newLine))
+                                                                                                if (CheckWord(newLine))
                                                                                                 {
                                                                                                     if (!listPass.Contains(newLine))
                                                                                                     {
@@ -1372,11 +1391,11 @@ namespace IA_Password_Human_Generator
                                                     {
                                                         if (line.Length > 1)
                                                         {
-                                                            if (UtilityClass.CheckWord(line))
+                                                            if (CheckWord(line))
                                                             {
-                                                                if (!UtilityClass.IsEmail(line, out bool fixedLine, out string newLine))
+                                                                if (!IsEmail(line, out bool fixedLine, out string newLine))
                                                                 {
-                                                                    string lineTmp = UtilityClass.RemoveControlCharacter(line);
+                                                                    string lineTmp = RemoveControlCharacter(line);
 
                                                                     if (rewriteLines || lineTmp != line)
                                                                     {
@@ -1392,13 +1411,13 @@ namespace IA_Password_Human_Generator
                                                                             {
                                                                                 line = line.Replace("xCg532%@%gdvf^5DGaa6&*rFTfg^FD4$OIFThrR_gh(ugf*/", "");
                                                                             }
-                                                                            line = UtilityClass.RemoveControlCharacter(line);
+                                                                            line = RemoveControlCharacter(line);
 
                                                                             if (line.Length == 40 && line.Contains(".") || line.Length == 32)
                                                                             {
-                                                                                if (!UtilityClass.RegexHex.IsMatch(line.Substring(0, 32)))
+                                                                                if (!_regexHex.IsMatch(line.Substring(0, 32)))
                                                                                 {
-                                                                                    if (UtilityClass.CheckWord(line))
+                                                                                    if (CheckWord(line))
                                                                                     {
                                                                                         if (!listPass.Contains(line))
                                                                                         {
@@ -1415,9 +1434,9 @@ namespace IA_Password_Human_Generator
                                                                             }
                                                                             else
                                                                             {
-                                                                                if (!UtilityClass.RegexHex.IsMatch(line))
+                                                                                if (!_regexHex.IsMatch(line))
                                                                                 {
-                                                                                    if (UtilityClass.CheckWord(line))
+                                                                                    if (CheckWord(line))
                                                                                     {
                                                                                         if (!listPass.Contains(line))
                                                                                         {
@@ -1442,10 +1461,10 @@ namespace IA_Password_Human_Generator
                                                                     {
                                                                         if (newLine.Length > 3)
                                                                         {
-                                                                            if (UtilityClass.CheckWord(newLine))
+                                                                            if (CheckWord(newLine))
                                                                             {
                                                                                 newLine = new string(newLine.Where(c => !char.IsControl(c)).ToArray());
-                                                                                newLine = UtilityClass.RemoveControlCharacter(newLine);
+                                                                                newLine = RemoveControlCharacter(newLine);
 
                                                                                 if (newLine.Contains("xCg532%@%gdvf^5DGaa6&*rFTfg^FD4$OIFThrR_gh(ugf*/"))
                                                                                 {
@@ -1454,9 +1473,9 @@ namespace IA_Password_Human_Generator
 
                                                                                 if (newLine.Length == 40 && newLine.Contains(".") || newLine.Length == 32)
                                                                                 {
-                                                                                    if (!UtilityClass.RegexHex.IsMatch(newLine.Substring(0, 32)))
+                                                                                    if (!_regexHex.IsMatch(newLine.Substring(0, 32)))
                                                                                     {
-                                                                                        if (UtilityClass.CheckWord(newLine))
+                                                                                        if (CheckWord(newLine))
                                                                                         {
                                                                                             if (!listPass.Contains(newLine))
                                                                                             {
@@ -1473,9 +1492,9 @@ namespace IA_Password_Human_Generator
                                                                                 }
                                                                                 else
                                                                                 {
-                                                                                    if (!UtilityClass.RegexHex.IsMatch(newLine))
+                                                                                    if (!_regexHex.IsMatch(newLine))
                                                                                     {
-                                                                                        if (UtilityClass.CheckWord(newLine))
+                                                                                        if (CheckWord(newLine))
                                                                                         {
                                                                                             if (!listPass.Contains(newLine))
                                                                                             {
@@ -1610,7 +1629,7 @@ namespace IA_Password_Human_Generator
 
             Console.WriteLine("Proceed to a simple merge? [Y/N]");
 
-            simpleMerge = (Console.ReadLine() ?? string.Empty).ToLower() == "y";
+            simpleMerge = Console.ReadLine()?.ToLower() == "y";
 
             Console.WriteLine("Merge of " + files.Length + "..");
 
@@ -1641,600 +1660,323 @@ namespace IA_Password_Human_Generator
 
                                 using (StreamWriter writerPotential = new StreamWriter(potentialFile, false, utf8Encoding) { AutoFlush = true })
                                 {
-                                    bool ignored = file.Contains("[HASH]") && (!file.Contains("[NOHASH]") && !file.Contains("[NOTHASH]"));
-
-                                    if (!ignored)
+                                    try
                                     {
+                                        bool ignored = file.Contains("[HASH]") && (!file.Contains("[NOHASH]") && !file.Contains("[NOTHASH]"));
 
-                                        using (StreamReader reader = new StreamReader(file))
+                                        if (!ignored)
                                         {
-                                            string line;
 
-                                            while ((line = reader.ReadLine()) != null)
+                                            using (StreamReader reader = new StreamReader(file))
                                             {
-                                                if (line.Length > 0 && !string.IsNullOrEmpty(line))
+                                                string line;
+
+                                                while ((line = reader.ReadLine()) != null)
                                                 {
-
-                                                    if (line.Length >= 10240)
+                                                    if (line.Length > 0 && !string.IsNullOrEmpty(line))
                                                     {
-                                                        if (line.Contains("\n"))
+
+                                                        if (line.Length >= 10240)
                                                         {
-                                                            foreach (var splitLine in line.Split(new[] { "\n" }, StringSplitOptions.None))
+                                                            if (line.Contains("\n"))
                                                             {
-                                                                if (!string.IsNullOrEmpty(splitLine))
+                                                                foreach (var splitLine in line.Split(new[] { "\n" }, StringSplitOptions.None))
                                                                 {
-                                                                    string lineCopy = splitLine;
-
-                                                                    if (lineCopy.Contains("\n"))
+                                                                    if (!string.IsNullOrEmpty(splitLine))
                                                                     {
-                                                                        foreach (var copyLine in lineCopy.Split(new[] { "\n" }, StringSplitOptions.None))
+                                                                        string lineCopy = splitLine;
+
+                                                                        if (lineCopy.Contains("\n"))
                                                                         {
-                                                                            if (!string.IsNullOrEmpty(copyLine))
+                                                                            foreach (var copyLine in lineCopy.Split(new[] { "\n" }, StringSplitOptions.None))
                                                                             {
-                                                                                string copy = copyLine;
-                                                                                copy = new string(copy.Where(c => !char.IsControl(c)).ToArray());
-                                                                                copy = UtilityClass.RemoveControlCharacter(copy);
-
-                                                                                if (!string.IsNullOrEmpty(copy))
+                                                                                if (!string.IsNullOrEmpty(copyLine))
                                                                                 {
-                                                                                    if (copy.Contains("CUT0-"))
+                                                                                    string copy = copyLine;
+                                                                                    copy = new string(copy.Where(c => !char.IsControl(c)).ToArray());
+                                                                                    copy = RemoveControlCharacter(copy);
+
+                                                                                    if (!string.IsNullOrEmpty(copy))
                                                                                     {
-                                                                                        string[] splitLineCopy = copy.Split(new[] { ":" }, StringSplitOptions.None);
-                                                                                        copy = splitLineCopy[2];
-                                                                                        writer.WriteLine(copy);
-                                                                                    }
-                                                                                    else if (copy.StartsWith("MD5SALT"))
-                                                                                    {
-                                                                                        string newPass = string.Empty;
-                                                                                        bool start = false;
-                                                                                        foreach (var character in copy)
+                                                                                        if (copy.Contains("CUT0-"))
                                                                                         {
-                                                                                            if (!start)
-                                                                                            {
-                                                                                                if (character == ':')
-                                                                                                {
-                                                                                                    start = true;
-                                                                                                }
-                                                                                            }
-                                                                                            else
-                                                                                            {
-                                                                                                if (character == ':')
-                                                                                                {
-                                                                                                    newPass = string.Empty;
-                                                                                                }
-                                                                                                newPass += character;
-                                                                                            }
+                                                                                            string[] splitLineCopy = copy.Split(new[] { ":" }, StringSplitOptions.None);
+                                                                                            copy = splitLineCopy[2];
+                                                                                            writer.WriteLine(copy);
                                                                                         }
-
-                                                                                        copy = newPass;
-
-                                                                                        writer.WriteLine(copy);
-                                                                                    }
-                                                                                    else
-                                                                                    {
-                                                                                        bool containDeuxpoints = copy.Contains(":");
-                                                                                        bool containPointVirgule = copy.Contains(";");
-                                                                                        bool containEspace = copy.Contains(":");
-                                                                                        bool containBarre = copy.Contains("|");
-                                                                                        bool containTabulation = copy.Contains("\t");
-
-                                                                                        bool resultSplitPass = false;
-                                                                                        bool converted = false;
-                                                                                        bool ignoreHex = false;
-                                                                                        string newLine = string.Empty;
-
-                                                                                        if (containDeuxpoints)
+                                                                                        else if (copy.StartsWith("MD5SALT"))
                                                                                         {
-                                                                                            resultSplitPass = UtilityClass.SplitMergedPassFromEmail(copy, ":", out newLine, out ignoreHex, out converted);
-                                                                                        }
-
-                                                                                        if (!ignoreHex)
-                                                                                        {
-                                                                                            if (resultSplitPass)
+                                                                                            string newPass = string.Empty;
+                                                                                            bool start = false;
+                                                                                            foreach (var character in copy)
                                                                                             {
-                                                                                                if (newLine.Length > 4 || converted)
+                                                                                                if (!start)
                                                                                                 {
-                                                                                                    if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                    if (character == ':')
                                                                                                     {
-                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                        {
-                                                                                                            blockDuplicateLines.Clear();
-                                                                                                        }
-                                                                                                        blockDuplicateLines.Add(newLine, 0);
-                                                                                                        writer.WriteLine(newLine);
+                                                                                                        start = true;
                                                                                                     }
                                                                                                 }
-                                                                                            }
-                                                                                            else
-                                                                                            {
-                                                                                                if (containPointVirgule)
+                                                                                                else
                                                                                                 {
-                                                                                                    resultSplitPass = UtilityClass.SplitMergedPassFromEmail(copy, ";", out newLine, out ignoreHex, out converted);
-                                                                                                }
-
-                                                                                                if (!ignoreHex)
-                                                                                                {
-                                                                                                    if (resultSplitPass)
+                                                                                                    if (character == ':')
                                                                                                     {
-                                                                                                        if (newLine.Length > 4 || converted)
+                                                                                                        newPass = string.Empty;
+                                                                                                    }
+                                                                                                    newPass += character;
+                                                                                                }
+                                                                                            }
+
+                                                                                            copy = newPass;
+
+                                                                                            writer.WriteLine(copy);
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            bool containDeuxpoints = copy.Contains(":");
+                                                                                            bool containPointVirgule = copy.Contains(";");
+                                                                                            bool containEspace = copy.Contains(":");
+                                                                                            bool containBarre = copy.Contains("|");
+                                                                                            bool containTabulation = copy.Contains("\t");
+
+                                                                                            bool resultSplitPass = false;
+                                                                                            bool converted = false;
+                                                                                            bool ignoreHex = false;
+                                                                                            string newLine = string.Empty;
+
+                                                                                            if (containDeuxpoints)
+                                                                                            {
+                                                                                                resultSplitPass = SplitMergedPassFromEmail(copy, ":", out newLine, out ignoreHex, out converted);
+                                                                                            }
+
+                                                                                            if (!ignoreHex)
+                                                                                            {
+                                                                                                if (resultSplitPass)
+                                                                                                {
+                                                                                                    if (newLine.Length > 4 || converted)
+                                                                                                    {
+                                                                                                        if (!blockDuplicateLines.ContainsKey(newLine))
                                                                                                         {
+                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                            {
+                                                                                                                blockDuplicateLines.Clear();
+                                                                                                            }
+                                                                                                            blockDuplicateLines.Add(newLine, 0);
                                                                                                             writer.WriteLine(newLine);
                                                                                                         }
                                                                                                     }
-                                                                                                    else
+                                                                                                }
+                                                                                                else
+                                                                                                {
+                                                                                                    if (containPointVirgule)
                                                                                                     {
-                                                                                                        if (containBarre)
-                                                                                                        {
-                                                                                                            resultSplitPass = UtilityClass.SplitMergedPassFromEmail(copy, "|", out newLine, out ignoreHex, out converted);
-                                                                                                        }
-
-                                                                                                        if (!ignoreHex)
-                                                                                                        {
-                                                                                                            if (resultSplitPass)
-                                                                                                            {
-                                                                                                                if (newLine.Length > 4 || converted)
-                                                                                                                {
-                                                                                                                    if (!blockDuplicateLines.ContainsKey(newLine))
-                                                                                                                    {
-                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                        {
-                                                                                                                            blockDuplicateLines.Clear();
-                                                                                                                        }
-                                                                                                                        blockDuplicateLines.Add(newLine, 0);
-                                                                                                                        writer.WriteLine(newLine);
-                                                                                                                    }
-                                                                                                                }
-                                                                                                            }
-                                                                                                            else
-                                                                                                            {
-                                                                                                                if (containTabulation)
-                                                                                                                {
-                                                                                                                    resultSplitPass = UtilityClass.SplitMergedPassFromEmail(copy, "\t", out newLine, out ignoreHex, out converted);
-                                                                                                                }
-
-                                                                                                                if (!ignoreHex)
-                                                                                                                {
-                                                                                                                    if (resultSplitPass)
-                                                                                                                    {
-                                                                                                                        if (newLine.Length > 4 || converted)
-                                                                                                                        {
-                                                                                                                            if (!blockDuplicateLines.ContainsKey(newLine))
-                                                                                                                            {
-                                                                                                                                if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                {
-                                                                                                                                    blockDuplicateLines.Clear();
-                                                                                                                                }
-                                                                                                                                blockDuplicateLines.Add(newLine, 0);
-                                                                                                                                writer.WriteLine(newLine);
-                                                                                                                            }
-                                                                                                                        }
-                                                                                                                    }
-                                                                                                                    else
-                                                                                                                    {
-                                                                                                                        if (containEspace)
-                                                                                                                        {
-                                                                                                                            resultSplitPass = UtilityClass.SplitMergedPassFromEmail(copy, " ", out newLine, out ignoreHex, out converted);
-                                                                                                                        }
-
-                                                                                                                        if (!ignoreHex)
-                                                                                                                        {
-                                                                                                                            if (resultSplitPass)
-                                                                                                                            {
-                                                                                                                                if (newLine.Length > 4 || converted)
-                                                                                                                                {
-                                                                                                                                    if (!blockDuplicateLines.ContainsKey(newLine))
-                                                                                                                                    {
-                                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                        {
-                                                                                                                                            blockDuplicateLines.Clear();
-                                                                                                                                        }
-                                                                                                                                        blockDuplicateLines.Add(newLine, 0);
-                                                                                                                                        writer.WriteLine(newLine);
-                                                                                                                                    }
-                                                                                                                                }
-                                                                                                                            }
-                                                                                                                            else
-                                                                                                                            {
-                                                                                                                                if (copy.Length > 4)
-                                                                                                                                {
-                                                                                                                                    if (!UtilityClass.RegexEmail.IsMatch(copy))
-                                                                                                                                    {
-                                                                                                                                        bool valid = false;
-
-                                                                                                                                        if (copy.Contains(";"))
-                                                                                                                                        {
-                                                                                                                                            var splitCopy = copy.Split(new[] { ";" }, StringSplitOptions.None);
-                                                                                                                                            if (splitCopy.Length == 2)
-                                                                                                                                            {
-                                                                                                                                                if (!(UtilityClass.RegexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
-                                                                                                                                                {
-                                                                                                                                                    if (!UtilityClass.RegexEmail.IsMatch(splitCopy[1]))
-                                                                                                                                                    {
-                                                                                                                                                        if (splitCopy[1].Length > 4)
-                                                                                                                                                        {
-                                                                                                                                                            valid = true;
-
-                                                                                                                                                            if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
-                                                                                                                                                            {
-                                                                                                                                                                if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                                                {
-                                                                                                                                                                    blockDuplicateLines.Clear();
-                                                                                                                                                                }
-                                                                                                                                                                blockDuplicateLines.Add(splitCopy[1], 0);
-                                                                                                                                                                writer.WriteLine(splitCopy[1]);
-                                                                                                                                                            }
-                                                                                                                                                        }
-                                                                                                                                                    }
-                                                                                                                                                }
-
-                                                                                                                                                if (!(UtilityClass.RegexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
-                                                                                                                                                {
-                                                                                                                                                    if (!UtilityClass.RegexEmail.IsMatch(splitCopy[0]))
-                                                                                                                                                    {
-                                                                                                                                                        if (splitCopy[0].Length > 4)
-                                                                                                                                                        {
-                                                                                                                                                            valid = true;
-
-                                                                                                                                                            if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
-                                                                                                                                                            {
-                                                                                                                                                                if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                                                {
-                                                                                                                                                                    blockDuplicateLines.Clear();
-                                                                                                                                                                }
-                                                                                                                                                                blockDuplicateLines.Add(splitCopy[0], 0);
-                                                                                                                                                                writer.WriteLine(splitCopy[0]);
-                                                                                                                                                            }
-                                                                                                                                                        }
-                                                                                                                                                    }
-                                                                                                                                                }
-                                                                                                                                            }
-                                                                                                                                        }
-
-                                                                                                                                        if (copy.Contains(":"))
-                                                                                                                                        {
-                                                                                                                                            var splitCopy = copy.Split(new[] { ":" }, StringSplitOptions.None);
-                                                                                                                                            if (splitCopy.Length == 2)
-                                                                                                                                            {
-                                                                                                                                                if (!(UtilityClass.RegexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
-                                                                                                                                                {
-                                                                                                                                                    if (!UtilityClass.RegexEmail.IsMatch(splitCopy[1]))
-                                                                                                                                                    {
-                                                                                                                                                        if (splitCopy[1].Length > 4)
-                                                                                                                                                        {
-                                                                                                                                                            valid = true;
-
-                                                                                                                                                            if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
-                                                                                                                                                            {
-                                                                                                                                                                if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                                                {
-                                                                                                                                                                    blockDuplicateLines.Clear();
-                                                                                                                                                                }
-                                                                                                                                                                blockDuplicateLines.Add(splitCopy[1], 0);
-                                                                                                                                                                writer.WriteLine(splitCopy[1]);
-                                                                                                                                                            }
-                                                                                                                                                        }
-                                                                                                                                                    }
-                                                                                                                                                }
-
-                                                                                                                                                if (!(UtilityClass.RegexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
-                                                                                                                                                {
-                                                                                                                                                    if (!UtilityClass.RegexEmail.IsMatch(splitCopy[0]))
-                                                                                                                                                    {
-                                                                                                                                                        if (splitCopy[0].Length > 4)
-                                                                                                                                                        {
-                                                                                                                                                            valid = true;
-
-                                                                                                                                                            if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
-                                                                                                                                                            {
-                                                                                                                                                                if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                                                {
-                                                                                                                                                                    blockDuplicateLines.Clear();
-                                                                                                                                                                }
-                                                                                                                                                                blockDuplicateLines.Add(splitCopy[0], 0);
-                                                                                                                                                                writer.WriteLine(splitCopy[0]);
-                                                                                                                                                            }
-                                                                                                                                                        }
-                                                                                                                                                    }
-                                                                                                                                                }
-                                                                                                                                            }
-                                                                                                                                        }
-
-                                                                                                                                        if (!valid)
-                                                                                                                                        {
-                                                                                                                                            writerPotential.WriteLine(copy);
-                                                                                                                                            totalPotentialWritten++;
-                                                                                                                                        }
-                                                                                                                                    }
-                                                                                                                                    else
-                                                                                                                                    {
-                                                                                                                                        ignoreHex = true;
-                                                                                                                                    }
-                                                                                                                                }
-
-                                                                                                                                //Debug.WriteLine("Can't found seperator on line: " + line);
-
-                                                                                                                            }
-                                                                                                                        }
-                                                                                                                    }
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
+                                                                                                        resultSplitPass = SplitMergedPassFromEmail(copy, ";", out newLine, out ignoreHex, out converted);
                                                                                                     }
-                                                                                                }
-                                                                                            }
-                                                                                        }
 
-                                                                                        if (ignoreHex)
-                                                                                        {
-                                                                                            totalLineIgnored++;
-                                                                                            writerIgnoredLine.WriteLine(file + " ->" + line);
-                                                                                        }
-                                                                                    }
-                                                                                }
-
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                    else
-                                                                    {
-
-                                                                        lineCopy = new string(lineCopy.Where(c => !char.IsControl(c)).ToArray());
-                                                                        lineCopy = UtilityClass.RemoveControlCharacter(lineCopy);
-                                                                        if (!string.IsNullOrEmpty(lineCopy))
-                                                                        {
-                                                                            if (line.Contains("CUT0-"))
-                                                                            {
-                                                                                string[] splitLineCopy = lineCopy.Split(new[] { ":" }, StringSplitOptions.None);
-                                                                                lineCopy = splitLineCopy[2];
-                                                                                writer.WriteLine(lineCopy);
-                                                                            }
-                                                                            else if (lineCopy.StartsWith("MD5SALT"))
-                                                                            {
-                                                                                string newPass = string.Empty;
-                                                                                bool start = false;
-                                                                                foreach (var character in lineCopy)
-                                                                                {
-                                                                                    if (!start)
-                                                                                    {
-                                                                                        if (character == ':')
-                                                                                        {
-                                                                                            start = true;
-                                                                                        }
-                                                                                    }
-                                                                                    else
-                                                                                    {
-                                                                                        if (character == ':')
-                                                                                        {
-                                                                                            newPass = string.Empty;
-                                                                                        }
-                                                                                        newPass += character;
-                                                                                    }
-                                                                                }
-
-
-                                                                                lineCopy = newPass;
-
-                                                                                writer.WriteLine(lineCopy);
-                                                                            }
-                                                                            else
-                                                                            {
-
-                                                                                var resultSplitPass = UtilityClass.SplitMergedPassFromEmail(lineCopy, ":", out var newLine, out var ignoreHex, out var converted);
-
-                                                                                if (!ignoreHex)
-                                                                                {
-                                                                                    if (resultSplitPass)
-                                                                                    {
-                                                                                        if (newLine.Length > 4 || converted)
-                                                                                        {
-                                                                                            if (!blockDuplicateLines.ContainsKey(newLine))
-                                                                                            {
-                                                                                                if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                {
-                                                                                                    blockDuplicateLines.Clear();
-                                                                                                }
-                                                                                                blockDuplicateLines.Add(newLine, 0);
-                                                                                                writer.WriteLine(newLine);
-                                                                                            }
-                                                                                        }
-                                                                                    }
-                                                                                    else
-                                                                                    {
-                                                                                        resultSplitPass = UtilityClass.SplitMergedPassFromEmail(lineCopy, ";", out newLine, out ignoreHex, out converted);
-
-                                                                                        if (!ignoreHex)
-                                                                                        {
-                                                                                            if (resultSplitPass)
-                                                                                            {
-                                                                                                if (newLine.Length > 4 || converted)
-                                                                                                {
-                                                                                                    writer.WriteLine(newLine);
-                                                                                                }
-                                                                                            }
-                                                                                            else
-                                                                                            {
-                                                                                                resultSplitPass = UtilityClass.SplitMergedPassFromEmail(lineCopy, "|", out newLine, out ignoreHex, out converted);
-
-                                                                                                if (!ignoreHex)
-                                                                                                {
-                                                                                                    if (resultSplitPass)
+                                                                                                    if (!ignoreHex)
                                                                                                     {
-                                                                                                        if (newLine.Length > 4 || converted)
+                                                                                                        if (resultSplitPass)
                                                                                                         {
-                                                                                                            if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                            if (newLine.Length > 4 || converted)
                                                                                                             {
-                                                                                                                if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                {
-                                                                                                                    blockDuplicateLines.Clear();
-                                                                                                                }
-                                                                                                                blockDuplicateLines.Add(newLine, 0);
                                                                                                                 writer.WriteLine(newLine);
                                                                                                             }
                                                                                                         }
-                                                                                                    }
-                                                                                                    else
-                                                                                                    {
-                                                                                                        resultSplitPass = UtilityClass.SplitMergedPassFromEmail(lineCopy, "\t", out newLine, out ignoreHex, out converted);
-
-                                                                                                        if (!ignoreHex)
+                                                                                                        else
                                                                                                         {
-                                                                                                            if (resultSplitPass)
+                                                                                                            if (containBarre)
                                                                                                             {
-                                                                                                                if (newLine.Length > 4 || converted)
+                                                                                                                resultSplitPass = SplitMergedPassFromEmail(copy, "|", out newLine, out ignoreHex, out converted);
+                                                                                                            }
+
+                                                                                                            if (!ignoreHex)
+                                                                                                            {
+                                                                                                                if (resultSplitPass)
                                                                                                                 {
-                                                                                                                    if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                                    if (newLine.Length > 4 || converted)
                                                                                                                     {
-                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                        if (!blockDuplicateLines.ContainsKey(newLine))
                                                                                                                         {
-                                                                                                                            blockDuplicateLines.Clear();
+                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                            {
+                                                                                                                                blockDuplicateLines.Clear();
+                                                                                                                            }
+                                                                                                                            blockDuplicateLines.Add(newLine, 0);
+                                                                                                                            writer.WriteLine(newLine);
                                                                                                                         }
-                                                                                                                        blockDuplicateLines.Add(newLine, 0);
-                                                                                                                        writer.WriteLine(newLine);
                                                                                                                     }
                                                                                                                 }
-                                                                                                            }
-                                                                                                            else
-                                                                                                            {
-                                                                                                                resultSplitPass = UtilityClass.SplitMergedPassFromEmail(lineCopy, " ", out newLine, out ignoreHex, out converted);
-
-                                                                                                                if (!ignoreHex)
+                                                                                                                else
                                                                                                                 {
-                                                                                                                    if (resultSplitPass)
+                                                                                                                    if (containTabulation)
                                                                                                                     {
-                                                                                                                        if (newLine.Length > 4 || converted)
+                                                                                                                        resultSplitPass = SplitMergedPassFromEmail(copy, "\t", out newLine, out ignoreHex, out converted);
+                                                                                                                    }
+
+                                                                                                                    if (!ignoreHex)
+                                                                                                                    {
+                                                                                                                        if (resultSplitPass)
                                                                                                                         {
-                                                                                                                            if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                                            if (newLine.Length > 4 || converted)
                                                                                                                             {
-                                                                                                                                if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                if (!blockDuplicateLines.ContainsKey(newLine))
                                                                                                                                 {
-                                                                                                                                    blockDuplicateLines.Clear();
+                                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                    {
+                                                                                                                                        blockDuplicateLines.Clear();
+                                                                                                                                    }
+                                                                                                                                    blockDuplicateLines.Add(newLine, 0);
+                                                                                                                                    writer.WriteLine(newLine);
                                                                                                                                 }
-                                                                                                                                blockDuplicateLines.Add(newLine, 0);
-                                                                                                                                writer.WriteLine(newLine);
                                                                                                                             }
                                                                                                                         }
-                                                                                                                    }
-                                                                                                                    else
-                                                                                                                    {
-                                                                                                                        if (line.Length > 4)
+                                                                                                                        else
                                                                                                                         {
-                                                                                                                            if (!UtilityClass.RegexEmail.IsMatch(lineCopy))
+                                                                                                                            if (containEspace)
                                                                                                                             {
-                                                                                                                                bool valid = false;
+                                                                                                                                resultSplitPass = SplitMergedPassFromEmail(copy, " ", out newLine, out ignoreHex, out converted);
+                                                                                                                            }
 
-                                                                                                                                if (lineCopy.Contains(";"))
+                                                                                                                            if (!ignoreHex)
+                                                                                                                            {
+                                                                                                                                if (resultSplitPass)
                                                                                                                                 {
-                                                                                                                                    var splitCopy = lineCopy.Split(new[] { ";" }, StringSplitOptions.None);
-                                                                                                                                    if (splitCopy.Length == 2)
+                                                                                                                                    if (newLine.Length > 4 || converted)
                                                                                                                                     {
-                                                                                                                                        if (!(UtilityClass.RegexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
+                                                                                                                                        if (!blockDuplicateLines.ContainsKey(newLine))
                                                                                                                                         {
-                                                                                                                                            if (!UtilityClass.RegexEmail.IsMatch(splitCopy[1]))
+                                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
                                                                                                                                             {
-                                                                                                                                                if (splitCopy[1].Length > 4)
-                                                                                                                                                {
-                                                                                                                                                    valid = true;
-                                                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
-                                                                                                                                                    {
-                                                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                                        {
-                                                                                                                                                            blockDuplicateLines.Clear();
-                                                                                                                                                        }
-                                                                                                                                                        blockDuplicateLines.Add(splitCopy[1], 0);
-                                                                                                                                                        writer.WriteLine(splitCopy[1]);
-                                                                                                                                                    }
-                                                                                                                                                }
+                                                                                                                                                blockDuplicateLines.Clear();
                                                                                                                                             }
-                                                                                                                                        }
-
-                                                                                                                                        if (!(UtilityClass.RegexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
-                                                                                                                                        {
-                                                                                                                                            if (!UtilityClass.RegexEmail.IsMatch(splitCopy[0]))
-                                                                                                                                            {
-                                                                                                                                                if (splitCopy[0].Length > 4)
-                                                                                                                                                {
-                                                                                                                                                    valid = true;
-
-                                                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
-                                                                                                                                                    {
-                                                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                                        {
-                                                                                                                                                            blockDuplicateLines.Clear();
-                                                                                                                                                        }
-                                                                                                                                                        blockDuplicateLines.Add(splitCopy[0], 0);
-                                                                                                                                                        writer.WriteLine(splitCopy[0]);
-                                                                                                                                                    }
-                                                                                                                                                }
-                                                                                                                                            }
+                                                                                                                                            blockDuplicateLines.Add(newLine, 0);
+                                                                                                                                            writer.WriteLine(newLine);
                                                                                                                                         }
                                                                                                                                     }
                                                                                                                                 }
-
-                                                                                                                                if (lineCopy.Contains(":"))
+                                                                                                                                else
                                                                                                                                 {
-                                                                                                                                    var splitCopy = lineCopy.Split(new[] { ":" }, StringSplitOptions.None);
-                                                                                                                                    if (splitCopy.Length == 2)
+                                                                                                                                    if (copy.Length > 4)
                                                                                                                                     {
-                                                                                                                                        if (!(UtilityClass.RegexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
+                                                                                                                                        if (!_regexEmail.IsMatch(copy))
                                                                                                                                         {
-                                                                                                                                            if (!UtilityClass.RegexEmail.IsMatch(splitCopy[1]))
-                                                                                                                                            {
-                                                                                                                                                if (splitCopy[1].Length > 4)
-                                                                                                                                                {
-                                                                                                                                                    valid = true;
+                                                                                                                                            bool valid = false;
 
-                                                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
+                                                                                                                                            if (copy.Contains(";"))
+                                                                                                                                            {
+                                                                                                                                                var splitCopy = copy.Split(new[] { ";" }, StringSplitOptions.None);
+                                                                                                                                                if (splitCopy.Length == 2)
+                                                                                                                                                {
+                                                                                                                                                    if (!(_regexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
                                                                                                                                                     {
-                                                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                                        if (!_regexEmail.IsMatch(splitCopy[1]))
                                                                                                                                                         {
-                                                                                                                                                            blockDuplicateLines.Clear();
+                                                                                                                                                            if (splitCopy[1].Length > 4)
+                                                                                                                                                            {
+                                                                                                                                                                valid = true;
+
+                                                                                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
+                                                                                                                                                                {
+                                                                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                                                    {
+                                                                                                                                                                        blockDuplicateLines.Clear();
+                                                                                                                                                                    }
+                                                                                                                                                                    blockDuplicateLines.Add(splitCopy[1], 0);
+                                                                                                                                                                    writer.WriteLine(splitCopy[1]);
+                                                                                                                                                                }
+                                                                                                                                                            }
                                                                                                                                                         }
-                                                                                                                                                        blockDuplicateLines.Add(splitCopy[1], 0);
-                                                                                                                                                        writer.WriteLine(splitCopy[1]);
+                                                                                                                                                    }
+
+                                                                                                                                                    if (!(_regexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                                                                                    {
+                                                                                                                                                        if (!_regexEmail.IsMatch(splitCopy[0]))
+                                                                                                                                                        {
+                                                                                                                                                            if (splitCopy[0].Length > 4)
+                                                                                                                                                            {
+                                                                                                                                                                valid = true;
+
+                                                                                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
+                                                                                                                                                                {
+                                                                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                                                    {
+                                                                                                                                                                        blockDuplicateLines.Clear();
+                                                                                                                                                                    }
+                                                                                                                                                                    blockDuplicateLines.Add(splitCopy[0], 0);
+                                                                                                                                                                    writer.WriteLine(splitCopy[0]);
+                                                                                                                                                                }
+                                                                                                                                                            }
+                                                                                                                                                        }
                                                                                                                                                     }
                                                                                                                                                 }
+                                                                                                                                            }
+
+                                                                                                                                            if (copy.Contains(":"))
+                                                                                                                                            {
+                                                                                                                                                var splitCopy = copy.Split(new[] { ":" }, StringSplitOptions.None);
+                                                                                                                                                if (splitCopy.Length == 2)
+                                                                                                                                                {
+                                                                                                                                                    if (!(_regexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
+                                                                                                                                                    {
+                                                                                                                                                        if (!_regexEmail.IsMatch(splitCopy[1]))
+                                                                                                                                                        {
+                                                                                                                                                            if (splitCopy[1].Length > 4)
+                                                                                                                                                            {
+                                                                                                                                                                valid = true;
+
+                                                                                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
+                                                                                                                                                                {
+                                                                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                                                    {
+                                                                                                                                                                        blockDuplicateLines.Clear();
+                                                                                                                                                                    }
+                                                                                                                                                                    blockDuplicateLines.Add(splitCopy[1], 0);
+                                                                                                                                                                    writer.WriteLine(splitCopy[1]);
+                                                                                                                                                                }
+                                                                                                                                                            }
+                                                                                                                                                        }
+                                                                                                                                                    }
+
+                                                                                                                                                    if (!(_regexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                                                                                    {
+                                                                                                                                                        if (!_regexEmail.IsMatch(splitCopy[0]))
+                                                                                                                                                        {
+                                                                                                                                                            if (splitCopy[0].Length > 4)
+                                                                                                                                                            {
+                                                                                                                                                                valid = true;
+
+                                                                                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
+                                                                                                                                                                {
+                                                                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                                                    {
+                                                                                                                                                                        blockDuplicateLines.Clear();
+                                                                                                                                                                    }
+                                                                                                                                                                    blockDuplicateLines.Add(splitCopy[0], 0);
+                                                                                                                                                                    writer.WriteLine(splitCopy[0]);
+                                                                                                                                                                }
+                                                                                                                                                            }
+                                                                                                                                                        }
+                                                                                                                                                    }
+                                                                                                                                                }
+                                                                                                                                            }
+
+                                                                                                                                            if (!valid)
+                                                                                                                                            {
+                                                                                                                                                writerPotential.WriteLine(copy);
+                                                                                                                                                totalPotentialWritten++;
                                                                                                                                             }
                                                                                                                                         }
-
-                                                                                                                                        if (!(UtilityClass.RegexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                                                                        else
                                                                                                                                         {
-                                                                                                                                            if (!UtilityClass.RegexEmail.IsMatch(splitCopy[0]))
-                                                                                                                                            {
-                                                                                                                                                if (splitCopy[0].Length > 4)
-                                                                                                                                                {
-                                                                                                                                                    valid = true;
-
-                                                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
-                                                                                                                                                    {
-                                                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                                        {
-                                                                                                                                                            blockDuplicateLines.Clear();
-                                                                                                                                                        }
-                                                                                                                                                        blockDuplicateLines.Add(splitCopy[0], 0);
-                                                                                                                                                        writer.WriteLine(splitCopy[0]);
-                                                                                                                                                    }
-                                                                                                                                                }
-                                                                                                                                            }
+                                                                                                                                            ignoreHex = true;
                                                                                                                                         }
                                                                                                                                     }
+
+                                                                                                                                    //Debug.WriteLine("Can't found seperator on line: " + line);
+
                                                                                                                                 }
-
-
-                                                                                                                                if (!valid)
-                                                                                                                                {
-                                                                                                                                    writerPotential.WriteLine(lineCopy);
-                                                                                                                                    totalPotentialWritten++;
-                                                                                                                                }
-
-                                                                                                                            }
-                                                                                                                            else
-                                                                                                                            {
-                                                                                                                                ignoreHex = true;
                                                                                                                             }
                                                                                                                         }
-
-                                                                                                                        //Debug.WriteLine("Can't found seperator on line: " + line);
-
                                                                                                                     }
                                                                                                                 }
                                                                                                             }
@@ -2242,123 +1984,403 @@ namespace IA_Password_Human_Generator
                                                                                                     }
                                                                                                 }
                                                                                             }
-                                                                                        }
-                                                                                    }
-                                                                                }
 
-                                                                                if (ignoreHex)
-                                                                                {
-                                                                                    if (line.Length > 4)
-                                                                                    {
-                                                                                        if (!UtilityClass.RegexEmail.IsMatch(lineCopy))
-                                                                                        {
-                                                                                            bool valid = false;
-
-                                                                                            if (lineCopy.Contains(";"))
-                                                                                            {
-                                                                                                var splitCopy = lineCopy.Split(new[] { ";" }, StringSplitOptions.None);
-                                                                                                if (splitCopy.Length == 2)
-                                                                                                {
-                                                                                                    if (!(UtilityClass.RegexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
-                                                                                                    {
-                                                                                                        if (!UtilityClass.RegexEmail.IsMatch(splitCopy[1]))
-                                                                                                        {
-                                                                                                            if (splitCopy[1].Length > 4)
-                                                                                                            {
-                                                                                                                valid = true;
-                                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
-                                                                                                                {
-                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                    {
-                                                                                                                        blockDuplicateLines.Clear();
-                                                                                                                    }
-                                                                                                                    blockDuplicateLines.Add(splitCopy[1], 0);
-                                                                                                                    writer.WriteLine(splitCopy[1]);
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-
-                                                                                                    if (!(UtilityClass.RegexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
-                                                                                                    {
-                                                                                                        if (!UtilityClass.RegexEmail.IsMatch(splitCopy[0]))
-                                                                                                        {
-                                                                                                            if (splitCopy[0].Length > 4)
-                                                                                                            {
-                                                                                                                valid = true;
-
-                                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
-                                                                                                                {
-                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                    {
-                                                                                                                        blockDuplicateLines.Clear();
-                                                                                                                    }
-                                                                                                                    blockDuplicateLines.Add(splitCopy[0], 0);
-                                                                                                                    writer.WriteLine(splitCopy[0]);
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                }
-                                                                                            }
-
-                                                                                            if (lineCopy.Contains(":"))
-                                                                                            {
-                                                                                                var splitCopy = lineCopy.Split(new[] { ":" }, StringSplitOptions.None);
-                                                                                                if (splitCopy.Length == 2)
-                                                                                                {
-                                                                                                    if (!(UtilityClass.RegexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
-                                                                                                    {
-                                                                                                        if (!UtilityClass.RegexEmail.IsMatch(splitCopy[1]))
-                                                                                                        {
-                                                                                                            if (splitCopy[1].Length > 4)
-                                                                                                            {
-                                                                                                                valid = true;
-
-                                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
-                                                                                                                {
-                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                    {
-                                                                                                                        blockDuplicateLines.Clear();
-                                                                                                                    }
-                                                                                                                    blockDuplicateLines.Add(splitCopy[1], 0);
-                                                                                                                    writer.WriteLine(splitCopy[1]);
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-
-                                                                                                    if (!(UtilityClass.RegexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
-                                                                                                    {
-                                                                                                        if (!UtilityClass.RegexEmail.IsMatch(splitCopy[0]))
-                                                                                                        {
-                                                                                                            if (splitCopy[0].Length > 4)
-                                                                                                            {
-                                                                                                                valid = true;
-
-                                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
-                                                                                                                {
-                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                    {
-                                                                                                                        blockDuplicateLines.Clear();
-                                                                                                                    }
-                                                                                                                    blockDuplicateLines.Add(splitCopy[0], 0);
-                                                                                                                    writer.WriteLine(splitCopy[0]);
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                }
-                                                                                            }
-
-
-                                                                                            if (!valid)
+                                                                                            if (ignoreHex)
                                                                                             {
                                                                                                 totalLineIgnored++;
                                                                                                 writerIgnoredLine.WriteLine(file + " ->" + line);
                                                                                             }
                                                                                         }
                                                                                     }
+
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        else
+                                                                        {
+
+                                                                            lineCopy = new string(lineCopy.Where(c => !char.IsControl(c)).ToArray());
+                                                                            lineCopy = RemoveControlCharacter(lineCopy);
+                                                                            if (!string.IsNullOrEmpty(lineCopy))
+                                                                            {
+                                                                                if (line.Contains("CUT0-"))
+                                                                                {
+                                                                                    string[] splitLineCopy = lineCopy.Split(new[] { ":" }, StringSplitOptions.None);
+                                                                                    lineCopy = splitLineCopy[2];
+                                                                                    writer.WriteLine(lineCopy);
+                                                                                }
+                                                                                else if (lineCopy.StartsWith("MD5SALT"))
+                                                                                {
+                                                                                    string newPass = string.Empty;
+                                                                                    bool start = false;
+                                                                                    foreach (var character in lineCopy)
+                                                                                    {
+                                                                                        if (!start)
+                                                                                        {
+                                                                                            if (character == ':')
+                                                                                            {
+                                                                                                start = true;
+                                                                                            }
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            if (character == ':')
+                                                                                            {
+                                                                                                newPass = string.Empty;
+                                                                                            }
+                                                                                            newPass += character;
+                                                                                        }
+                                                                                    }
+
+
+                                                                                    lineCopy = newPass;
+
+                                                                                    writer.WriteLine(lineCopy);
+                                                                                }
+                                                                                else
+                                                                                {
+
+                                                                                    var resultSplitPass = SplitMergedPassFromEmail(lineCopy, ":", out var newLine, out var ignoreHex, out var converted);
+
+                                                                                    if (!ignoreHex)
+                                                                                    {
+                                                                                        if (resultSplitPass)
+                                                                                        {
+                                                                                            if (newLine.Length > 4 || converted)
+                                                                                            {
+                                                                                                if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                {
+                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                    {
+                                                                                                        blockDuplicateLines.Clear();
+                                                                                                    }
+                                                                                                    blockDuplicateLines.Add(newLine, 0);
+                                                                                                    writer.WriteLine(newLine);
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            resultSplitPass = SplitMergedPassFromEmail(lineCopy, ";", out newLine, out ignoreHex, out converted);
+
+                                                                                            if (!ignoreHex)
+                                                                                            {
+                                                                                                if (resultSplitPass)
+                                                                                                {
+                                                                                                    if (newLine.Length > 4 || converted)
+                                                                                                    {
+                                                                                                        writer.WriteLine(newLine);
+                                                                                                    }
+                                                                                                }
+                                                                                                else
+                                                                                                {
+                                                                                                    resultSplitPass = SplitMergedPassFromEmail(lineCopy, "|", out newLine, out ignoreHex, out converted);
+
+                                                                                                    if (!ignoreHex)
+                                                                                                    {
+                                                                                                        if (resultSplitPass)
+                                                                                                        {
+                                                                                                            if (newLine.Length > 4 || converted)
+                                                                                                            {
+                                                                                                                if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                                {
+                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                    {
+                                                                                                                        blockDuplicateLines.Clear();
+                                                                                                                    }
+                                                                                                                    blockDuplicateLines.Add(newLine, 0);
+                                                                                                                    writer.WriteLine(newLine);
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                        else
+                                                                                                        {
+                                                                                                            resultSplitPass = SplitMergedPassFromEmail(lineCopy, "\t", out newLine, out ignoreHex, out converted);
+
+                                                                                                            if (!ignoreHex)
+                                                                                                            {
+                                                                                                                if (resultSplitPass)
+                                                                                                                {
+                                                                                                                    if (newLine.Length > 4 || converted)
+                                                                                                                    {
+                                                                                                                        if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                                        {
+                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                            {
+                                                                                                                                blockDuplicateLines.Clear();
+                                                                                                                            }
+                                                                                                                            blockDuplicateLines.Add(newLine, 0);
+                                                                                                                            writer.WriteLine(newLine);
+                                                                                                                        }
+                                                                                                                    }
+                                                                                                                }
+                                                                                                                else
+                                                                                                                {
+                                                                                                                    resultSplitPass = SplitMergedPassFromEmail(lineCopy, " ", out newLine, out ignoreHex, out converted);
+
+                                                                                                                    if (!ignoreHex)
+                                                                                                                    {
+                                                                                                                        if (resultSplitPass)
+                                                                                                                        {
+                                                                                                                            if (newLine.Length > 4 || converted)
+                                                                                                                            {
+                                                                                                                                if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                                                {
+                                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                    {
+                                                                                                                                        blockDuplicateLines.Clear();
+                                                                                                                                    }
+                                                                                                                                    blockDuplicateLines.Add(newLine, 0);
+                                                                                                                                    writer.WriteLine(newLine);
+                                                                                                                                }
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                        else
+                                                                                                                        {
+                                                                                                                            if (line.Length > 4)
+                                                                                                                            {
+                                                                                                                                if (!_regexEmail.IsMatch(lineCopy))
+                                                                                                                                {
+                                                                                                                                    bool valid = false;
+
+                                                                                                                                    if (lineCopy.Contains(";"))
+                                                                                                                                    {
+                                                                                                                                        var splitCopy = lineCopy.Split(new[] { ";" }, StringSplitOptions.None);
+                                                                                                                                        if (splitCopy.Length == 2)
+                                                                                                                                        {
+                                                                                                                                            if (!(_regexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
+                                                                                                                                            {
+                                                                                                                                                if (!_regexEmail.IsMatch(splitCopy[1]))
+                                                                                                                                                {
+                                                                                                                                                    if (splitCopy[1].Length > 4)
+                                                                                                                                                    {
+                                                                                                                                                        valid = true;
+                                                                                                                                                        if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
+                                                                                                                                                        {
+                                                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                                            {
+                                                                                                                                                                blockDuplicateLines.Clear();
+                                                                                                                                                            }
+                                                                                                                                                            blockDuplicateLines.Add(splitCopy[1], 0);
+                                                                                                                                                            writer.WriteLine(splitCopy[1]);
+                                                                                                                                                        }
+                                                                                                                                                    }
+                                                                                                                                                }
+                                                                                                                                            }
+
+                                                                                                                                            if (!(_regexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                                                                            {
+                                                                                                                                                if (!_regexEmail.IsMatch(splitCopy[0]))
+                                                                                                                                                {
+                                                                                                                                                    if (splitCopy[0].Length > 4)
+                                                                                                                                                    {
+                                                                                                                                                        valid = true;
+
+                                                                                                                                                        if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
+                                                                                                                                                        {
+                                                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                                            {
+                                                                                                                                                                blockDuplicateLines.Clear();
+                                                                                                                                                            }
+                                                                                                                                                            blockDuplicateLines.Add(splitCopy[0], 0);
+                                                                                                                                                            writer.WriteLine(splitCopy[0]);
+                                                                                                                                                        }
+                                                                                                                                                    }
+                                                                                                                                                }
+                                                                                                                                            }
+                                                                                                                                        }
+                                                                                                                                    }
+
+                                                                                                                                    if (lineCopy.Contains(":"))
+                                                                                                                                    {
+                                                                                                                                        var splitCopy = lineCopy.Split(new[] { ":" }, StringSplitOptions.None);
+                                                                                                                                        if (splitCopy.Length == 2)
+                                                                                                                                        {
+                                                                                                                                            if (!(_regexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
+                                                                                                                                            {
+                                                                                                                                                if (!_regexEmail.IsMatch(splitCopy[1]))
+                                                                                                                                                {
+                                                                                                                                                    if (splitCopy[1].Length > 4)
+                                                                                                                                                    {
+                                                                                                                                                        valid = true;
+
+                                                                                                                                                        if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
+                                                                                                                                                        {
+                                                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                                            {
+                                                                                                                                                                blockDuplicateLines.Clear();
+                                                                                                                                                            }
+                                                                                                                                                            blockDuplicateLines.Add(splitCopy[1], 0);
+                                                                                                                                                            writer.WriteLine(splitCopy[1]);
+                                                                                                                                                        }
+                                                                                                                                                    }
+                                                                                                                                                }
+                                                                                                                                            }
+
+                                                                                                                                            if (!(_regexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                                                                            {
+                                                                                                                                                if (!_regexEmail.IsMatch(splitCopy[0]))
+                                                                                                                                                {
+                                                                                                                                                    if (splitCopy[0].Length > 4)
+                                                                                                                                                    {
+                                                                                                                                                        valid = true;
+
+                                                                                                                                                        if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
+                                                                                                                                                        {
+                                                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                                            {
+                                                                                                                                                                blockDuplicateLines.Clear();
+                                                                                                                                                            }
+                                                                                                                                                            blockDuplicateLines.Add(splitCopy[0], 0);
+                                                                                                                                                            writer.WriteLine(splitCopy[0]);
+                                                                                                                                                        }
+                                                                                                                                                    }
+                                                                                                                                                }
+                                                                                                                                            }
+                                                                                                                                        }
+                                                                                                                                    }
+
+
+                                                                                                                                    if (!valid)
+                                                                                                                                    {
+                                                                                                                                        writerPotential.WriteLine(lineCopy);
+                                                                                                                                        totalPotentialWritten++;
+                                                                                                                                    }
+
+                                                                                                                                }
+                                                                                                                                else
+                                                                                                                                {
+                                                                                                                                    ignoreHex = true;
+                                                                                                                                }
+                                                                                                                            }
+
+                                                                                                                            //Debug.WriteLine("Can't found seperator on line: " + line);
+
+                                                                                                                        }
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+
+                                                                                    if (ignoreHex)
+                                                                                    {
+                                                                                        if (line.Length > 4)
+                                                                                        {
+                                                                                            if (!_regexEmail.IsMatch(lineCopy))
+                                                                                            {
+                                                                                                bool valid = false;
+
+                                                                                                if (lineCopy.Contains(";"))
+                                                                                                {
+                                                                                                    var splitCopy = lineCopy.Split(new[] { ";" }, StringSplitOptions.None);
+                                                                                                    if (splitCopy.Length == 2)
+                                                                                                    {
+                                                                                                        if (!(_regexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
+                                                                                                        {
+                                                                                                            if (!_regexEmail.IsMatch(splitCopy[1]))
+                                                                                                            {
+                                                                                                                if (splitCopy[1].Length > 4)
+                                                                                                                {
+                                                                                                                    valid = true;
+                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
+                                                                                                                    {
+                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                        {
+                                                                                                                            blockDuplicateLines.Clear();
+                                                                                                                        }
+                                                                                                                        blockDuplicateLines.Add(splitCopy[1], 0);
+                                                                                                                        writer.WriteLine(splitCopy[1]);
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+
+                                                                                                        if (!(_regexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                                        {
+                                                                                                            if (!_regexEmail.IsMatch(splitCopy[0]))
+                                                                                                            {
+                                                                                                                if (splitCopy[0].Length > 4)
+                                                                                                                {
+                                                                                                                    valid = true;
+
+                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
+                                                                                                                    {
+                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                        {
+                                                                                                                            blockDuplicateLines.Clear();
+                                                                                                                        }
+                                                                                                                        blockDuplicateLines.Add(splitCopy[0], 0);
+                                                                                                                        writer.WriteLine(splitCopy[0]);
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+
+                                                                                                if (lineCopy.Contains(":"))
+                                                                                                {
+                                                                                                    var splitCopy = lineCopy.Split(new[] { ":" }, StringSplitOptions.None);
+                                                                                                    if (splitCopy.Length == 2)
+                                                                                                    {
+                                                                                                        if (!(_regexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
+                                                                                                        {
+                                                                                                            if (!_regexEmail.IsMatch(splitCopy[1]))
+                                                                                                            {
+                                                                                                                if (splitCopy[1].Length > 4)
+                                                                                                                {
+                                                                                                                    valid = true;
+
+                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
+                                                                                                                    {
+                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                        {
+                                                                                                                            blockDuplicateLines.Clear();
+                                                                                                                        }
+                                                                                                                        blockDuplicateLines.Add(splitCopy[1], 0);
+                                                                                                                        writer.WriteLine(splitCopy[1]);
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+
+                                                                                                        if (!(_regexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                                        {
+                                                                                                            if (!_regexEmail.IsMatch(splitCopy[0]))
+                                                                                                            {
+                                                                                                                if (splitCopy[0].Length > 4)
+                                                                                                                {
+                                                                                                                    valid = true;
+
+                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
+                                                                                                                    {
+                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                        {
+                                                                                                                            blockDuplicateLines.Clear();
+                                                                                                                        }
+                                                                                                                        blockDuplicateLines.Add(splitCopy[0], 0);
+                                                                                                                        writer.WriteLine(splitCopy[0]);
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+
+
+                                                                                                if (!valid)
+                                                                                                {
+                                                                                                    totalLineIgnored++;
+                                                                                                    writerIgnoredLine.WriteLine(file + " ->" + line);
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
                                                                                 }
                                                                             }
                                                                         }
@@ -2366,437 +2388,441 @@ namespace IA_Password_Human_Generator
                                                                 }
                                                             }
                                                         }
-                                                    }
-                                                    else
-                                                    {
-                                                        line = new string(line.Where(c => !char.IsControl(c)).ToArray());
-                                                        line = UtilityClass.RemoveControlCharacter(line);
-                                                        if (!string.IsNullOrEmpty(line))
+                                                        else
                                                         {
-                                                            if (line.Contains("CUT0-"))
+                                                            line = new string(line.Where(c => !char.IsControl(c)).ToArray());
+                                                            line = RemoveControlCharacter(line);
+                                                            if (!string.IsNullOrEmpty(line))
                                                             {
-                                                                string[] splitLine = line.Split(new[] { ":" }, StringSplitOptions.None);
-                                                                line = splitLine[2];
-                                                                writer.WriteLine(line);
-                                                            }
-                                                            else if (line.StartsWith("MD5SALT"))
-                                                            {
-                                                                string newPass = string.Empty;
-                                                                bool start = false;
-                                                                foreach (var character in line)
+                                                                if (line.Contains("CUT0-"))
                                                                 {
-                                                                    if (!start)
-                                                                    {
-                                                                        if (character == ':')
-                                                                        {
-                                                                            start = true;
-                                                                        }
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        if (character == ':')
-                                                                        {
-                                                                            newPass = string.Empty;
-                                                                        }
-                                                                        newPass += character;
-                                                                    }
+                                                                    string[] splitLine = line.Split(new[] { ":" }, StringSplitOptions.None);
+                                                                    line = splitLine[2];
+                                                                    writer.WriteLine(line);
                                                                 }
-
-                                                                line = newPass;
-
-                                                                writer.WriteLine(line);
-                                                            }
-                                                            else
-                                                            {
-                                                                bool containDeuxpoints = line.Contains(":");
-                                                                bool containPointVirgule = line.Contains(";");
-                                                                bool containEspace = line.Contains(":");
-                                                                bool containBarre = line.Contains("|");
-                                                                bool containTabulation = line.Contains("\t");
-
-                                                                bool resultSplitPass = false;
-                                                                bool converted = false;
-                                                                bool ignoreHex = false;
-                                                                string newLine = string.Empty;
-
-                                                                if (containDeuxpoints)
+                                                                else if (line.StartsWith("MD5SALT"))
                                                                 {
-                                                                    resultSplitPass = UtilityClass.SplitMergedPassFromEmail(line, ":", out newLine, out ignoreHex, out converted);
-                                                                }
-
-                                                                if (!ignoreHex)
-                                                                {
-                                                                    if (resultSplitPass)
+                                                                    string newPass = string.Empty;
+                                                                    bool start = false;
+                                                                    foreach (var character in line)
                                                                     {
-                                                                        if (newLine.Length > 4 || converted)
+                                                                        if (!start)
                                                                         {
-                                                                            if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                            if (character == ':')
                                                                             {
-                                                                                if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                {
-                                                                                    blockDuplicateLines.Clear();
-                                                                                }
-                                                                                blockDuplicateLines.Add(newLine, 0);
-                                                                                writer.WriteLine(newLine);
+                                                                                start = true;
                                                                             }
                                                                         }
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        if (containPointVirgule)
+                                                                        else
                                                                         {
-                                                                            resultSplitPass = UtilityClass.SplitMergedPassFromEmail(line, ";", out newLine, out ignoreHex, out converted);
-                                                                        }
-
-                                                                        if (!ignoreHex)
-                                                                        {
-                                                                            if (resultSplitPass)
+                                                                            if (character == ':')
                                                                             {
-                                                                                if (newLine.Length > 4 || converted)
+                                                                                newPass = string.Empty;
+                                                                            }
+                                                                            newPass += character;
+                                                                        }
+                                                                    }
+
+                                                                    line = newPass;
+
+                                                                    writer.WriteLine(line);
+                                                                }
+                                                                else
+                                                                {
+                                                                    bool containDeuxpoints = line.Contains(":");
+                                                                    bool containPointVirgule = line.Contains(";");
+                                                                    bool containEspace = line.Contains(":");
+                                                                    bool containBarre = line.Contains("|");
+                                                                    bool containTabulation = line.Contains("\t");
+
+                                                                    bool resultSplitPass = false;
+                                                                    bool converted = false;
+                                                                    bool ignoreHex = false;
+                                                                    string newLine = string.Empty;
+
+                                                                    if (containDeuxpoints)
+                                                                    {
+                                                                        resultSplitPass = SplitMergedPassFromEmail(line, ":", out newLine, out ignoreHex, out converted);
+                                                                    }
+
+                                                                    if (!ignoreHex)
+                                                                    {
+                                                                        if (resultSplitPass)
+                                                                        {
+                                                                            if (newLine.Length > 4 || converted)
+                                                                            {
+                                                                                if (!blockDuplicateLines.ContainsKey(newLine))
                                                                                 {
-                                                                                    if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
                                                                                     {
-                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                        blockDuplicateLines.Clear();
+                                                                                    }
+                                                                                    blockDuplicateLines.Add(newLine, 0);
+                                                                                    writer.WriteLine(newLine);
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            if (containPointVirgule)
+                                                                            {
+                                                                                resultSplitPass = SplitMergedPassFromEmail(line, ";", out newLine, out ignoreHex, out converted);
+                                                                            }
+
+                                                                            if (!ignoreHex)
+                                                                            {
+                                                                                if (resultSplitPass)
+                                                                                {
+                                                                                    if (newLine.Length > 4 || converted)
+                                                                                    {
+                                                                                        if (!blockDuplicateLines.ContainsKey(newLine))
                                                                                         {
-                                                                                            blockDuplicateLines.Clear();
+                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                            {
+                                                                                                blockDuplicateLines.Clear();
+                                                                                            }
+                                                                                            blockDuplicateLines.Add(newLine, 0);
+                                                                                            writer.WriteLine(newLine);
                                                                                         }
-                                                                                        blockDuplicateLines.Add(newLine, 0);
-                                                                                        writer.WriteLine(newLine);
                                                                                     }
                                                                                 }
-                                                                            }
-                                                                            else
-                                                                            {
-                                                                                if (containBarre)
+                                                                                else
                                                                                 {
-                                                                                    resultSplitPass = UtilityClass.SplitMergedPassFromEmail(line, "|", out newLine, out ignoreHex, out converted);
-                                                                                }
-
-                                                                                if (!ignoreHex)
-                                                                                {
-                                                                                    if (resultSplitPass)
+                                                                                    if (containBarre)
                                                                                     {
-                                                                                        if (newLine.Length > 4 || converted)
+                                                                                        resultSplitPass = SplitMergedPassFromEmail(line, "|", out newLine, out ignoreHex, out converted);
+                                                                                    }
+
+                                                                                    if (!ignoreHex)
+                                                                                    {
+                                                                                        if (resultSplitPass)
                                                                                         {
-                                                                                            if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                            if (newLine.Length > 4 || converted)
                                                                                             {
-                                                                                                if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                if (!blockDuplicateLines.ContainsKey(newLine))
                                                                                                 {
-                                                                                                    blockDuplicateLines.Clear();
+                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                    {
+                                                                                                        blockDuplicateLines.Clear();
+                                                                                                    }
+                                                                                                    blockDuplicateLines.Add(newLine, 0);
+                                                                                                    writer.WriteLine(newLine);
                                                                                                 }
-                                                                                                blockDuplicateLines.Add(newLine, 0);
-                                                                                                writer.WriteLine(newLine);
+                                                                                            }
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            if (containTabulation)
+                                                                                            {
+                                                                                                resultSplitPass = SplitMergedPassFromEmail(line, "\t", out newLine, out ignoreHex, out converted);
+                                                                                            }
+
+                                                                                            if (!ignoreHex)
+                                                                                            {
+                                                                                                if (resultSplitPass)
+                                                                                                {
+                                                                                                    if (newLine.Length > 4 || converted)
+                                                                                                    {
+                                                                                                        if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                        {
+                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                            {
+                                                                                                                blockDuplicateLines.Clear();
+                                                                                                            }
+                                                                                                            blockDuplicateLines.Add(newLine, 0);
+                                                                                                            writer.WriteLine(newLine);
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                                else
+                                                                                                {
+                                                                                                    if (containEspace)
+                                                                                                    {
+                                                                                                        resultSplitPass = SplitMergedPassFromEmail(line, " ", out newLine, out ignoreHex, out converted);
+                                                                                                    }
+
+                                                                                                    if (!ignoreHex)
+                                                                                                    {
+                                                                                                        if (resultSplitPass)
+                                                                                                        {
+                                                                                                            if (newLine.Length > 4 || converted)
+                                                                                                            {
+                                                                                                                if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                                {
+                                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                    {
+                                                                                                                        blockDuplicateLines.Clear();
+                                                                                                                    }
+                                                                                                                    blockDuplicateLines.Add(newLine, 0);
+                                                                                                                    writer.WriteLine(newLine);
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                        else
+                                                                                                        {
+                                                                                                            if (line.Length > 4)
+                                                                                                            {
+                                                                                                                if (!_regexEmail.IsMatch(line))
+                                                                                                                {
+                                                                                                                    bool valid = false;
+                                                                                                                    if (line.Contains(";"))
+                                                                                                                    {
+                                                                                                                        var splitCopy = line.Split(new[] { ";" }, StringSplitOptions.None);
+                                                                                                                        if (splitCopy.Length == 2)
+                                                                                                                        {
+                                                                                                                            if (!(_regexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
+                                                                                                                            {
+                                                                                                                                if (!_regexEmail.IsMatch(splitCopy[1]))
+                                                                                                                                {
+                                                                                                                                    if (splitCopy[1].Length > 4)
+                                                                                                                                    {
+                                                                                                                                        valid = true;
+                                                                                                                                        if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
+                                                                                                                                        {
+                                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                            {
+                                                                                                                                                blockDuplicateLines.Clear();
+                                                                                                                                            }
+                                                                                                                                            blockDuplicateLines.Add(splitCopy[1], 0);
+                                                                                                                                            writer.WriteLine(splitCopy[1]);
+                                                                                                                                        }
+                                                                                                                                    }
+                                                                                                                                }
+                                                                                                                            }
+
+                                                                                                                            if (!(_regexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                                                            {
+                                                                                                                                if (!_regexEmail.IsMatch(splitCopy[0]))
+                                                                                                                                {
+                                                                                                                                    if (splitCopy[0].Length > 4)
+                                                                                                                                    {
+                                                                                                                                        valid = true;
+                                                                                                                                        if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
+                                                                                                                                        {
+                                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                            {
+                                                                                                                                                blockDuplicateLines.Clear();
+                                                                                                                                            }
+                                                                                                                                            blockDuplicateLines.Add(splitCopy[0], 0);
+                                                                                                                                            writer.WriteLine(splitCopy[0]);
+                                                                                                                                        }
+                                                                                                                                    }
+                                                                                                                                }
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                    }
+
+                                                                                                                    if (line.Contains(":"))
+                                                                                                                    {
+                                                                                                                        var splitCopy = line.Split(new[] { ":" }, StringSplitOptions.None);
+                                                                                                                        if (splitCopy.Length == 2)
+                                                                                                                        {
+                                                                                                                            if (!(_regexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
+                                                                                                                            {
+                                                                                                                                if (!_regexEmail.IsMatch(splitCopy[1]))
+                                                                                                                                {
+                                                                                                                                    if (splitCopy[1].Length > 4)
+                                                                                                                                    {
+                                                                                                                                        valid = true;
+
+                                                                                                                                        if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
+                                                                                                                                        {
+                                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                            {
+                                                                                                                                                blockDuplicateLines.Clear();
+                                                                                                                                            }
+                                                                                                                                            blockDuplicateLines.Add(splitCopy[1], 0);
+                                                                                                                                            writer.WriteLine(splitCopy[1]);
+                                                                                                                                        }
+                                                                                                                                    }
+                                                                                                                                }
+                                                                                                                            }
+
+                                                                                                                            if (!(_regexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                                                            {
+                                                                                                                                if (!_regexEmail.IsMatch(splitCopy[0]))
+                                                                                                                                {
+                                                                                                                                    if (splitCopy[0].Length > 4)
+                                                                                                                                    {
+                                                                                                                                        valid = true;
+
+                                                                                                                                        if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
+                                                                                                                                        {
+                                                                                                                                            if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                                                            {
+                                                                                                                                                blockDuplicateLines.Clear();
+                                                                                                                                            }
+                                                                                                                                            blockDuplicateLines.Add(splitCopy[0], 0);
+                                                                                                                                            writer.WriteLine(splitCopy[0]);
+                                                                                                                                        }
+                                                                                                                                    }
+                                                                                                                                }
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                    }
+
+
+                                                                                                                    if (!valid)
+                                                                                                                    {
+                                                                                                                        writerPotential.WriteLine(line);
+                                                                                                                        totalPotentialWritten++;
+
+                                                                                                                    }
+
+                                                                                                                }
+                                                                                                                else
+                                                                                                                {
+                                                                                                                    ignoreHex = true;
+                                                                                                                }
+                                                                                                            }
+
+                                                                                                            //Debug.WriteLine("Can't found seperator on line: " + line);
+
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
                                                                                             }
                                                                                         }
                                                                                     }
-                                                                                    else
-                                                                                    {
-                                                                                        if (containTabulation)
-                                                                                        {
-                                                                                            resultSplitPass = UtilityClass.SplitMergedPassFromEmail(line, "\t", out newLine, out ignoreHex, out converted);
-                                                                                        }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
 
-                                                                                        if (!ignoreHex)
+                                                                    if (ignoreHex)
+                                                                    {
+                                                                        if (line.Length > 4)
+                                                                        {
+                                                                            if (!_regexEmail.IsMatch(line))
+                                                                            {
+                                                                                bool valid = false;
+                                                                                if (line.Contains(";"))
+                                                                                {
+                                                                                    var splitCopy = line.Split(new[] { ";" }, StringSplitOptions.None);
+                                                                                    if (splitCopy.Length == 2)
+                                                                                    {
+                                                                                        if (!(_regexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
                                                                                         {
-                                                                                            if (resultSplitPass)
+                                                                                            if (!_regexEmail.IsMatch(splitCopy[1]))
                                                                                             {
-                                                                                                if (newLine.Length > 4 || converted)
+                                                                                                if (splitCopy[1].Length > 4)
                                                                                                 {
-                                                                                                    if (!blockDuplicateLines.ContainsKey(newLine))
+                                                                                                    valid = true;
+                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
                                                                                                     {
                                                                                                         if (blockDuplicateLines.Count >= 80_000_000)
                                                                                                         {
                                                                                                             blockDuplicateLines.Clear();
                                                                                                         }
-                                                                                                        blockDuplicateLines.Add(newLine, 0);
-                                                                                                        writer.WriteLine(newLine);
+                                                                                                        blockDuplicateLines.Add(splitCopy[1], 0);
+                                                                                                        writer.WriteLine(splitCopy[1]);
                                                                                                     }
                                                                                                 }
                                                                                             }
-                                                                                            else
-                                                                                            {
-                                                                                                if (containEspace)
-                                                                                                {
-                                                                                                    resultSplitPass = UtilityClass.SplitMergedPassFromEmail(line, " ", out newLine, out ignoreHex, out converted);
-                                                                                                }
+                                                                                        }
 
-                                                                                                if (!ignoreHex)
+                                                                                        if (!(_regexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                        {
+                                                                                            if (!_regexEmail.IsMatch(splitCopy[0]))
+                                                                                            {
+                                                                                                if (splitCopy[0].Length > 4)
                                                                                                 {
-                                                                                                    if (resultSplitPass)
+                                                                                                    valid = true;
+                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
                                                                                                     {
-                                                                                                        if (newLine.Length > 4 || converted)
+                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
                                                                                                         {
-                                                                                                            if (!blockDuplicateLines.ContainsKey(newLine))
-                                                                                                            {
-                                                                                                                if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                {
-                                                                                                                    blockDuplicateLines.Clear();
-                                                                                                                }
-                                                                                                                blockDuplicateLines.Add(newLine, 0);
-                                                                                                                writer.WriteLine(newLine);
-                                                                                                            }
+                                                                                                            blockDuplicateLines.Clear();
                                                                                                         }
+                                                                                                        blockDuplicateLines.Add(splitCopy[0], 0);
+                                                                                                        writer.WriteLine(splitCopy[0]);
                                                                                                     }
-                                                                                                    else
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+
+                                                                                if (line.Contains(":"))
+                                                                                {
+                                                                                    var splitCopy = line.Split(new[] { ":" }, StringSplitOptions.None);
+                                                                                    if (splitCopy.Length == 2)
+                                                                                    {
+                                                                                        if (!(_regexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
+                                                                                        {
+                                                                                            if (!_regexEmail.IsMatch(splitCopy[1]))
+                                                                                            {
+                                                                                                if (splitCopy[1].Length > 4)
+                                                                                                {
+                                                                                                    valid = true;
+
+                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
                                                                                                     {
-                                                                                                        if (line.Length > 4)
+                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
                                                                                                         {
-                                                                                                            if (!UtilityClass.RegexEmail.IsMatch(line))
-                                                                                                            {
-                                                                                                                bool valid = false;
-                                                                                                                if (line.Contains(";"))
-                                                                                                                {
-                                                                                                                    var splitCopy = line.Split(new[] { ";" }, StringSplitOptions.None);
-                                                                                                                    if (splitCopy.Length == 2)
-                                                                                                                    {
-                                                                                                                        if (!(UtilityClass.RegexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
-                                                                                                                        {
-                                                                                                                            if (!UtilityClass.RegexEmail.IsMatch(splitCopy[1]))
-                                                                                                                            {
-                                                                                                                                if (splitCopy[1].Length > 4)
-                                                                                                                                {
-                                                                                                                                    valid = true;
-                                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
-                                                                                                                                    {
-                                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                        {
-                                                                                                                                            blockDuplicateLines.Clear();
-                                                                                                                                        }
-                                                                                                                                        blockDuplicateLines.Add(splitCopy[1], 0);
-                                                                                                                                        writer.WriteLine(splitCopy[1]);
-                                                                                                                                    }
-                                                                                                                                }
-                                                                                                                            }
-                                                                                                                        }
-
-                                                                                                                        if (!(UtilityClass.RegexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
-                                                                                                                        {
-                                                                                                                            if (!UtilityClass.RegexEmail.IsMatch(splitCopy[0]))
-                                                                                                                            {
-                                                                                                                                if (splitCopy[0].Length > 4)
-                                                                                                                                {
-                                                                                                                                    valid = true;
-                                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
-                                                                                                                                    {
-                                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                        {
-                                                                                                                                            blockDuplicateLines.Clear();
-                                                                                                                                        }
-                                                                                                                                        blockDuplicateLines.Add(splitCopy[0], 0);
-                                                                                                                                        writer.WriteLine(splitCopy[0]);
-                                                                                                                                    }
-                                                                                                                                }
-                                                                                                                            }
-                                                                                                                        }
-                                                                                                                    }
-                                                                                                                }
-
-                                                                                                                if (line.Contains(":"))
-                                                                                                                {
-                                                                                                                    var splitCopy = line.Split(new[] { ":" }, StringSplitOptions.None);
-                                                                                                                    if (splitCopy.Length == 2)
-                                                                                                                    {
-                                                                                                                        if (!(UtilityClass.RegexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
-                                                                                                                        {
-                                                                                                                            if (!UtilityClass.RegexEmail.IsMatch(splitCopy[1]))
-                                                                                                                            {
-                                                                                                                                if (splitCopy[1].Length > 4)
-                                                                                                                                {
-                                                                                                                                    valid = true;
-
-                                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
-                                                                                                                                    {
-                                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                        {
-                                                                                                                                            blockDuplicateLines.Clear();
-                                                                                                                                        }
-                                                                                                                                        blockDuplicateLines.Add(splitCopy[1], 0);
-                                                                                                                                        writer.WriteLine(splitCopy[1]);
-                                                                                                                                    }
-                                                                                                                                }
-                                                                                                                            }
-                                                                                                                        }
-
-                                                                                                                        if (!(UtilityClass.RegexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
-                                                                                                                        {
-                                                                                                                            if (!UtilityClass.RegexEmail.IsMatch(splitCopy[0]))
-                                                                                                                            {
-                                                                                                                                if (splitCopy[0].Length > 4)
-                                                                                                                                {
-                                                                                                                                    valid = true;
-
-                                                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
-                                                                                                                                    {
-                                                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                                                        {
-                                                                                                                                            blockDuplicateLines.Clear();
-                                                                                                                                        }
-                                                                                                                                        blockDuplicateLines.Add(splitCopy[0], 0);
-                                                                                                                                        writer.WriteLine(splitCopy[0]);
-                                                                                                                                    }
-                                                                                                                                }
-                                                                                                                            }
-                                                                                                                        }
-                                                                                                                    }
-                                                                                                                }
-
-
-                                                                                                                if (!valid)
-                                                                                                                {
-                                                                                                                    writerPotential.WriteLine(line);
-                                                                                                                    totalPotentialWritten++;
-
-                                                                                                                }
-
-                                                                                                            }
-                                                                                                            else
-                                                                                                            {
-                                                                                                                ignoreHex = true;
-                                                                                                            }
+                                                                                                            blockDuplicateLines.Clear();
                                                                                                         }
+                                                                                                        blockDuplicateLines.Add(splitCopy[1], 0);
+                                                                                                        writer.WriteLine(splitCopy[1]);
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
 
-                                                                                                        //Debug.WriteLine("Can't found seperator on line: " + line);
+                                                                                        if (!(_regexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
+                                                                                        {
+                                                                                            if (!_regexEmail.IsMatch(splitCopy[0]))
+                                                                                            {
+                                                                                                if (splitCopy[0].Length > 4)
+                                                                                                {
+                                                                                                    valid = true;
 
+                                                                                                    if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
+                                                                                                    {
+                                                                                                        if (blockDuplicateLines.Count >= 80_000_000)
+                                                                                                        {
+                                                                                                            blockDuplicateLines.Clear();
+                                                                                                        }
+                                                                                                        blockDuplicateLines.Add(splitCopy[0], 0);
+                                                                                                        writer.WriteLine(splitCopy[0]);
                                                                                                     }
                                                                                                 }
                                                                                             }
                                                                                         }
                                                                                     }
                                                                                 }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
 
-                                                                if (ignoreHex)
-                                                                {
-                                                                    if (line.Length > 4)
-                                                                    {
-                                                                        if (!UtilityClass.RegexEmail.IsMatch(line))
-                                                                        {
-                                                                            bool valid = false;
-                                                                            if (line.Contains(";"))
-                                                                            {
-                                                                                var splitCopy = line.Split(new[] { ";" }, StringSplitOptions.None);
-                                                                                if (splitCopy.Length == 2)
+
+                                                                                if (!valid)
                                                                                 {
-                                                                                    if (!(UtilityClass.RegexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
-                                                                                    {
-                                                                                        if (!UtilityClass.RegexEmail.IsMatch(splitCopy[1]))
-                                                                                        {
-                                                                                            if (splitCopy[1].Length > 4)
-                                                                                            {
-                                                                                                valid = true;
-                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
-                                                                                                {
-                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                    {
-                                                                                                        blockDuplicateLines.Clear();
-                                                                                                    }
-                                                                                                    blockDuplicateLines.Add(splitCopy[1], 0);
-                                                                                                    writer.WriteLine(splitCopy[1]);
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    }
-
-                                                                                    if (!(UtilityClass.RegexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
-                                                                                    {
-                                                                                        if (!UtilityClass.RegexEmail.IsMatch(splitCopy[0]))
-                                                                                        {
-                                                                                            if (splitCopy[0].Length > 4)
-                                                                                            {
-                                                                                                valid = true;
-                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
-                                                                                                {
-                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                    {
-                                                                                                        blockDuplicateLines.Clear();
-                                                                                                    }
-                                                                                                    blockDuplicateLines.Add(splitCopy[0], 0);
-                                                                                                    writer.WriteLine(splitCopy[0]);
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    }
+                                                                                    totalLineIgnored++;
+                                                                                    writerIgnoredLine.WriteLine(file + " ->" + line);
                                                                                 }
-                                                                            }
-
-                                                                            if (line.Contains(":"))
-                                                                            {
-                                                                                var splitCopy = line.Split(new[] { ":" }, StringSplitOptions.None);
-                                                                                if (splitCopy.Length == 2)
-                                                                                {
-                                                                                    if (!(UtilityClass.RegexHex.IsMatch(splitCopy[1]) && splitCopy[1].Length == 32))
-                                                                                    {
-                                                                                        if (!UtilityClass.RegexEmail.IsMatch(splitCopy[1]))
-                                                                                        {
-                                                                                            if (splitCopy[1].Length > 4)
-                                                                                            {
-                                                                                                valid = true;
-
-                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[1]))
-                                                                                                {
-                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                    {
-                                                                                                        blockDuplicateLines.Clear();
-                                                                                                    }
-                                                                                                    blockDuplicateLines.Add(splitCopy[1], 0);
-                                                                                                    writer.WriteLine(splitCopy[1]);
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    }
-
-                                                                                    if (!(UtilityClass.RegexHex.IsMatch(splitCopy[0]) && splitCopy[0].Length == 32))
-                                                                                    {
-                                                                                        if (!UtilityClass.RegexEmail.IsMatch(splitCopy[0]))
-                                                                                        {
-                                                                                            if (splitCopy[0].Length > 4)
-                                                                                            {
-                                                                                                valid = true;
-
-                                                                                                if (!blockDuplicateLines.ContainsKey(splitCopy[0]))
-                                                                                                {
-                                                                                                    if (blockDuplicateLines.Count >= 80_000_000)
-                                                                                                    {
-                                                                                                        blockDuplicateLines.Clear();
-                                                                                                    }
-                                                                                                    blockDuplicateLines.Add(splitCopy[0], 0);
-                                                                                                    writer.WriteLine(splitCopy[0]);
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    }
-                                                                                }
-                                                                            }
-
-
-                                                                            if (!valid)
-                                                                            {
-                                                                                totalLineIgnored++;
-                                                                                writerIgnoredLine.WriteLine(file + " ->" + line);
                                                                             }
                                                                         }
                                                                     }
                                                                 }
                                                             }
                                                         }
-                                                    }
 
+
+                                                    }
+                                                    totalLineRead++;
 
                                                 }
-                                                totalLineRead++;
-
                                             }
-                                        }
 
-                                        totalFileRead++;
+                                            totalFileRead++;
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine("File ignored: " + file);
+                                            writerIgnored.WriteLine(file);
+                                        }
                                     }
-                                    else
+                                    catch(Exception error)
                                     {
-                                        Console.WriteLine("File ignored: " + file);
-                                        writerIgnored.WriteLine(file);
+                                        Debug.WriteLine("Error on line: " + file  + " | Exception: "+error.Message);
                                     }
                                 }
 
@@ -2822,7 +2848,7 @@ namespace IA_Password_Human_Generator
                             {
                                 if (!blockDuplicateLines.ContainsKey(line))
                                 {
-                                    if (blockDuplicateLines.Count >= 80_000_000)
+                                    if (blockDuplicateLines.Count >= 80_000_000 || !ClassRamStatus.RamAvailableStatus())
                                         blockDuplicateLines.Clear();
                                     
                                     blockDuplicateLines.Add(line, 0);
@@ -3121,10 +3147,10 @@ namespace IA_Password_Human_Generator
 
         #endregion
 
-        #region Functions dedicated to the generation of passwords.
+        #region Fonctions dédiés à la génération des mots de passe.
 
         /// <summary>
-        /// Checked the lines of the files, compares and returns true if the password already exists.
+        /// Vérifié les lignes des fichiers, compare et retourne vrai si le mot de passe existe déjà.
         /// </summary>
         /// <param name="pass"></param>
         /// <returns></returns>
@@ -3159,10 +3185,1208 @@ namespace IA_Password_Human_Generator
             return false;
         }
 
+        /// <summary>
+        ///  Generate a random long number object between a range selected.
+        /// </summary>
+        /// <param name="minimumValue"></param>
+        /// <param name="maximumValue"></param>
+        /// <returns></returns>
+        public static decimal GetRandomBetween(decimal minimumValue, decimal maximumValue)
+        {
+            using (RNGCryptoServiceProvider generator = new RNGCryptoServiceProvider())
+            {
+                var randomNumber = new byte[sizeof(float)];
 
+                generator.GetBytes(randomNumber);
+
+                var asciiValueOfRandomCharacter = Convert.ToDouble(randomNumber[0]);
+
+                var multiplier = Math.Max(0, asciiValueOfRandomCharacter / 255d - 0.00000000001d);
+
+                var range = maximumValue - minimumValue + 1;
+
+                var randomValueInRange = Math.Floor(multiplier * (double)range);
+
+                return (minimumValue + (decimal)randomValueInRange);
+            }
+        }
 
         #endregion
 
+        #region Other functions.
+
+        /// <summary>
+        /// Get a string from a hex string and choose the right Encoding class to return this one propertly.
+        /// </summary>
+        /// <param name="hexBytes"></param>
+        /// <returns></returns>
+        private static string GetStringFromByteArrayHexString(byte[] hexBytes)
+        {
+            string line;
+            hexBytes = hexBytes.TakeWhile((v, index) => hexBytes.Skip(index).Any(w => w != 0x00)).ToArray();
+
+            var encoding = new TextEncodingDetect().DetectEncoding(hexBytes, hexBytes.Length);
+
+            switch (encoding)
+            {
+                case TextEncodingDetect.Encoding.Ansi:
+                    line = Encoding.GetEncoding(1252).GetString(hexBytes);
+                    break;
+                case TextEncodingDetect.Encoding.Ascii:
+                    line = Encoding.ASCII.GetString(hexBytes);
+                    break;
+                case TextEncodingDetect.Encoding.Utf16BeBom:
+                    {
+                        var encode = new UnicodeEncoding(true, true, false);
+                        line = encode.GetString(hexBytes);
+                    }
+                    break;
+                case TextEncodingDetect.Encoding.Utf16BeNoBom:
+                    {
+                        try
+                        {
+                            var encode = new UnicodeEncoding(true, false, true);
+                            line = encode.GetString(hexBytes);
+                        }
+                        catch
+                        {
+                            try
+                            {
+                                var encode = new UnicodeEncoding(true, true, true);
+                                line = encode.GetString(hexBytes);
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    line = Encoding.GetEncoding("gb2312").GetString(hexBytes);
+                                }
+                                catch
+                                {
+                                    line = Encoding.GetEncoding(1252).GetString(hexBytes);
+                                }
+                            }
+                        }
+                    }
+                    break;
+
+                case TextEncodingDetect.Encoding.Utf16LeBom:
+                    {
+                        var encode = new UnicodeEncoding(false, true, false);
+                        line = encode.GetString(hexBytes);
+                    }
+                    break;
+                case TextEncodingDetect.Encoding.Utf16LeNoBom:
+                    {
+                        try
+                        {
+                            var encode = new UnicodeEncoding(false, false, true);
+                            line = encode.GetString(hexBytes);
+                        }
+                        catch
+                        {
+                            try
+                            {
+                                var encode = new UnicodeEncoding(false, true, true);
+                                line = encode.GetString(hexBytes);
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    line = Encoding.GetEncoding("gb2312").GetString(hexBytes);
+                                }
+                                catch
+                                {
+                                    line = Encoding.GetEncoding(1252).GetString(hexBytes);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case TextEncodingDetect.Encoding.Utf8Bom:
+                    {
+                        var encode = new UTF8Encoding(true);
+                        line = encode.GetString(hexBytes);
+                    }
+                    break;
+                case TextEncodingDetect.Encoding.Utf8Nobom:
+                    {
+                        var encode = new UTF8Encoding(false);
+                        line = encode.GetString(hexBytes);
+                    }
+                    break;
+                default:
+                    line = Encoding.UTF8.GetString(hexBytes);
+                    break;
+            }
+
+            line = new string(line.Where(c => !char.IsControl(c)).ToArray());
+            line = RemoveControlCharacter(line);
+
+            return line;
+        }
+
+        /// <summary>
+        /// Split password from an email.
+        /// </summary>
+        /// <param name="line"></param>
+        /// <param name="characterSeperator"></param>
+        /// <param name="newLine"></param>
+        /// <param name="ignoreHex"></param>
+        /// <param name="converted"></param>
+        /// <returns></returns>
+        private static bool SplitMergedPassFromEmail(string line, string characterSeperator, out string newLine, out bool ignoreHex, out bool converted)
+        {
+            ignoreHex = false;
+            converted = false;
+            if (line.Contains(characterSeperator))
+            {
+
+                if (line.Count(x => x == characterSeperator[0]) == 1)
+                {
+                    string[] lineSplit = line.Split(new[] { characterSeperator }, StringSplitOptions.None);
+                    if (_regexEmail.IsMatch(lineSplit[0]) || (lineSplit[0].Contains("@") && lineSplit[0].Contains(".")))
+                    {
+                        newLine = lineSplit[1];
+                        if (_regexHex.IsMatch(newLine) && newLine.Length >= 32)
+                        {
+                            bool containLetter = false;
+
+                            foreach (var character in newLine)
+                            {
+                                if (char.IsLetter(character))
+                                {
+                                    containLetter = true;
+                                    break;
+                                }
+                            }
+
+                            if (containLetter)
+                            {
+                                ignoreHex = true;
+                                return false;
+                            }
+                        }
+
+                        if(newLine.Contains("$HEX[") || newLine.Contains("$hex["))
+                        {
+                            newLine = newLine.Replace("$HEX[", "");
+                            newLine = newLine.Replace("$hex[", "");
+                            newLine = newLine.Replace("]", "");
+                            var hexBytes = GetByteArrayFromHexString(newLine);
+                            if(hexBytes != null)
+                            {
+                                newLine = GetStringFromByteArrayHexString(hexBytes);
+                                converted = true;
+                                //Debug.WriteLine(lineSplit[1] + " -> " + newLine);
+                            }
+                            else
+                            {
+                                ignoreHex = true;
+                                return false;
+                            }
+                        }
+
+                        if(newLine.Contains(" | "))
+                        {
+                            int indexOf = newLine.IndexOf(" | ");
+                            var newLineTest = newLine.Substring(0, indexOf);
+
+                            newLine = newLineTest;
+                            converted = true;
+                        }
+
+                        if (_regexEmail.IsMatch(newLine))
+                        {
+                            if (newLine.Contains(characterSeperator))
+                            {
+                                var splitNewLine = newLine.Split(new[] { characterSeperator }, StringSplitOptions.None);
+                                if (splitNewLine.Length > 1)
+                                {
+                                    if (!string.IsNullOrEmpty(splitNewLine[1]))
+                                    {
+                                        if (splitNewLine[1].Length > 4)
+                                        {
+                                            if (!_regexEmail.IsMatch(splitNewLine[1]) && !_regexHex.IsMatch(splitNewLine[1]))
+                                            {
+                                                newLine = splitNewLine[1];
+                                                return true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            ignoreHex = true;
+                            return false;
+
+                        }
+
+                        return true;
+                    }
+
+                    long timestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+                    string email = string.Empty;
+                    string pass = string.Empty;
+
+                    bool spaceFound = false;
+                    foreach (var lineCaracter in line)
+                    {
+                        if (!spaceFound)
+                        {
+                            if (lineCaracter == characterSeperator[0])
+                                spaceFound = true;
+                            else
+                                email += lineCaracter;
+                        }
+                        else
+                            pass += lineCaracter;
+
+                        if (timestamp +5 < DateTimeOffset.Now.ToUnixTimeSeconds())
+                        {
+                            Debug.WriteLine("Error stuck on splitting line: "+line);
+                            break;
+                        }
+                    }
+
+
+                    if (_regexEmail.IsMatch(email))
+                    {
+                        if (_regexHex.IsMatch(pass) && pass.Length >= 32)
+                        {
+                            bool containLetter = false;
+
+                            foreach (var character in pass)
+                            {
+                                if (char.IsLetter(character))
+                                {
+                                    containLetter = true;
+                                    break;
+                                }
+                            }
+
+                            if (containLetter)
+                                ignoreHex = true;
+                        }
+                        else
+                        {
+                            newLine = pass;
+
+                            if (newLine.Contains("$HEX[") || newLine.Contains("$hex["))
+                            {
+                                newLine = newLine.Replace("$HEX[", "");
+                                newLine = newLine.Replace("$hex[", "");
+                                newLine = newLine.Replace("]", "");
+                                var hexBytes = GetByteArrayFromHexString(newLine);
+                                if (hexBytes != null)
+                                {
+                                    newLine = GetStringFromByteArrayHexString(hexBytes);
+                                    converted = true;
+                                }
+                                else
+                                {
+                                    ignoreHex = true;
+                                    return false;
+                                }
+                            }
+
+                            if (newLine.Contains(" | "))
+                            {
+                                int indexOf = newLine.IndexOf(" | ");
+                                var newLineTest = newLine.Substring(0, indexOf);
+
+                                newLine = newLineTest;
+                                converted = true;
+                            }
+
+                            if (_regexEmail.IsMatch(newLine))
+                            {
+                                if (newLine.Contains(characterSeperator))
+                                {
+                                    var splitNewLine = newLine.Split(new[] { characterSeperator }, StringSplitOptions.None);
+                                    if (splitNewLine.Length > 1)
+                                    {
+                                        if (!string.IsNullOrEmpty(splitNewLine[1]))
+                                        {
+                                            if (splitNewLine[1].Length > 4)
+                                            {
+                                                if (!_regexEmail.IsMatch(splitNewLine[1]) && !_regexHex.IsMatch(splitNewLine[1]))
+                                                {
+                                                    newLine = splitNewLine[1];
+                                                    return true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                ignoreHex = true;
+                                return false;
+
+                            }
+
+                            return true;
+
+                        }
+                    }
+                }
+                else
+                {
+                    string email = string.Empty;
+                    string pass = string.Empty;
+                    long timestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+                    bool spaceFound = false;
+                    foreach (var lineCaracter in line)
+                    {
+                        if (!spaceFound)
+                        {
+                            if (lineCaracter == characterSeperator[0])
+                                spaceFound = true;
+                            else
+                                email += lineCaracter;
+                        }
+                        else
+                            pass += lineCaracter;
+                        
+                        if (timestamp + 5 < DateTimeOffset.Now.ToUnixTimeSeconds())
+                        {
+                            Debug.WriteLine("Error stuck on splitting line: " + line);
+                            break;
+                        }
+                    }
+
+
+                    if (_regexEmail.IsMatch(email) || (email.Contains("@") && email.Contains(".")))
+                    {
+                        if ((_regexHex.IsMatch(pass) && pass.Length >= 32) || pass.Length >= 32)
+                        {
+                            bool containLetter = false;
+
+                            foreach (var character in pass)
+                            {
+                                if (char.IsLetter(character))
+                                {
+                                    containLetter = true;
+                                    break;
+                                }
+                            }
+
+                            if (containLetter)
+                                ignoreHex = true;
+                            
+                        }
+                        else
+                        {
+                            newLine = pass;
+
+                            if (newLine.Contains("$HEX[") || newLine.Contains("$hex["))
+                            {
+                                newLine = newLine.Replace("$HEX[", "");
+                                newLine = newLine.Replace("$hex[", "");
+                                newLine = newLine.Replace("]", "");
+                                var hexBytes = GetByteArrayFromHexString(newLine);
+                                if (hexBytes != null)
+                                {
+                                    newLine = GetStringFromByteArrayHexString(hexBytes);
+                                    converted = true;
+                                }
+                                else
+                                {
+                                    ignoreHex = true;
+                                    return false;
+                                }
+                            }
+
+                            if (newLine.Contains(" | "))
+                            {
+                                int indexOf = newLine.IndexOf(" | ");
+                                var newLineTest = newLine.Substring(0, indexOf);
+
+                                newLine = newLineTest;
+                                converted = true;
+                            }
+
+                            if (_regexEmail.IsMatch(newLine))
+                            {
+                                if (newLine.Contains(characterSeperator))
+                                {
+                                    var splitNewLine = newLine.Split(new[] { characterSeperator }, StringSplitOptions.None);
+                                    if (splitNewLine.Length > 1)
+                                    {
+                                        if (!string.IsNullOrEmpty(splitNewLine[1]))
+                                        {
+                                            if (splitNewLine[1].Length > 4)
+                                            {
+                                                if (!_regexEmail.IsMatch(splitNewLine[1]) && !_regexHex.IsMatch(splitNewLine[1]))
+                                                {
+                                                    newLine = splitNewLine[1];
+                                                    return true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                ignoreHex = true;
+                                return false;
+
+                            }
+
+                            return true;
+                        }
+
+                    }
+
+                }
+            }
+
+            newLine = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Get a string between two string delimiters.
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="firstString"></param>
+        /// <param name="lastString"></param>
+        /// <returns></returns>
+        public static string GetStringBetween(string str, string firstString, string lastString)
+        {
+            string FinalString;
+            int Pos1 = str.IndexOf(firstString) + firstString.Length;
+            int Pos2 = str.IndexOf(lastString);
+            FinalString = str.Substring(Pos1, Pos2 - Pos1);
+            return FinalString;
+        }
+
+        private static Regex _regexHex = new Regex(@"\A\b[0-9a-fA-F]+\b\Z");
+
+        private static string RemoveControlCharacter(string line)
+        {
+            line = line.Replace("\x00", "");
+            line = line.Replace("\x01", "");
+            line = line.Replace("\x02", "");
+            line = line.Replace("\x03", "");
+            line = line.Replace("\x04", "");
+            line = line.Replace("\x05", "");
+            line = line.Replace("\x06", "");
+            line = line.Replace("\x07", "");
+            line = line.Replace("\x08", "");
+            line = line.Replace("\x09", "");
+            line = line.Replace("\x0b", "");
+            line = line.Replace("\x0c", "");
+            line = line.Replace("\x0d", "");
+            line = line.Replace("\x0e", "");
+            line = line.Replace("\x0f", "");
+            line = line.Replace("\x10", "");
+            line = line.Replace("\x11", "");
+            line = line.Replace("\x12", "");
+            line = line.Replace("\x13", "");
+            line = line.Replace("\x14", "");
+            line = line.Replace("\x15", "");
+            line = line.Replace("\x16", "");
+            line = line.Replace("\x17", "");
+            line = line.Replace("\x18", "");
+            line = line.Replace("\x19", "");
+            line = line.Replace("\x1a", "");
+            line = line.Replace("\x1b", "");
+            line = line.Replace("\x1c", "");
+            line = line.Replace("\x1d", "");
+            line = line.Replace("\x1e", "");
+            line = line.Replace("\x1f", "");
+            line = line.Replace("\x7f", "");
+            line = line.Replace("\x80", "");
+            line = line.Replace("\x81", "");
+            line = line.Replace("\x82", "");
+            line = line.Replace("\x83", "");
+            line = line.Replace("\x84", "");
+            line = line.Replace("\x85", "");
+            line = line.Replace("\x86", "");
+            line = line.Replace("\x87", "");
+            line = line.Replace("\x88", "");
+            line = line.Replace("\x89", "");
+            line = line.Replace("\x8a", "");
+            line = line.Replace("\x8b", "");
+            line = line.Replace("\x8c", "");
+            line = line.Replace("\x8d", "");
+            line = line.Replace("\x8e", "");
+            line = line.Replace("\x8f", "");
+            line = line.Replace("\x90", "");
+            line = line.Replace("\x91", "");
+            line = line.Replace("\x92", "");
+            line = line.Replace("\x93", "");
+            line = line.Replace("\x94", "");
+            line = line.Replace("\x95", "");
+            line = line.Replace("\x96", "");
+            line = line.Replace("\x97", "");
+            line = line.Replace("\x98", "");
+            line = line.Replace("\x99", "");
+            line = line.Replace("\x9a", "");
+            line = line.Replace("\x9b", "");
+            line = line.Replace("\x9c", "");
+            line = line.Replace("\x9d", "");
+            line = line.Replace("\x9e", "");
+            line = line.Replace("\x9f", "");
+
+            return line;
+        }
+
+        /// <summary>
+        /// Convert a byte array to hex string like Bitconverter class.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="startIndex"></param>
+        /// <param name="length"></param>
+        /// <param name="removeSeperator">RemoveFromCache the character '-' if true</param>
+        /// <returns></returns>
+        public static string GetHexStringFromByteArray(byte[] value, int startIndex, int length, bool removeSeperator = true)
+        {
+            int newSize = length * 3;
+            char[] hexCharArray = new char[newSize];
+            int currentIndex;
+            for (currentIndex = 0; currentIndex < newSize; currentIndex += 3)
+            {
+                byte currentByte = value[startIndex++];
+                hexCharArray[currentIndex] = GetHexValue(currentByte / 0x10);
+                hexCharArray[currentIndex + 1] = GetHexValue(currentByte % 0x10);
+                hexCharArray[currentIndex + 2] = '-';
+            }
+            if (removeSeperator)
+            {
+                return new string(hexCharArray, 0, hexCharArray.Length - 1).Replace("-", "");
+            }
+            return new string(hexCharArray, 0, hexCharArray.Length - 1);
+        }
+
+
+        /// <summary>
+        /// Get Hex value from char index value.
+        /// </summary>
+        /// <param name="i"></param>
+        /// <returns></returns>
+        private static char GetHexValue(int i)
+        {
+            if (i < 10)
+            {
+                return (char)(i + 0x30);
+            }
+            return (char)((i - 10) + 0x41);
+        }
+
+        /// <summary>
+        /// Convert a hex string into byte array.
+        /// </summary>
+        /// <param name="hex"></param>
+        /// <returns></returns>
+        public static byte[] GetByteArrayFromHexString(string hex)
+        {
+            try
+            {
+                var chars = hex.ToCharArray();
+                var bytes = new List<byte>();
+                for (int index = 0; index < chars.Length; index += 2)
+                {
+                    if (index + 2 <= chars.Length)
+                    {
+                        var chunk = new string(chars, index, 2);
+                        bytes.Add(byte.Parse(chunk, NumberStyles.AllowHexSpecifier));
+                    }
+                }
+                return bytes.ToArray();
+            }
+            catch
+            {
+                if (hex.Contains(":"))
+                {
+                    try
+                    {
+                        var chars = hex.Split(new[] { ":" }, StringSplitOptions.None)[1].ToCharArray();
+                        var bytes = new List<byte>();
+                        for (int index = 0; index < chars.Length; index += 2)
+                        {
+
+                            if (index + 2 <= chars.Length)
+                            {
+                                var chunk = new string(chars, index, 2);
+                                bytes.Add(byte.Parse(chunk, NumberStyles.AllowHexSpecifier));
+                            }
+
+                        }
+                        return bytes.ToArray();
+                    }
+                    catch
+                    {
+                        // Ignored.
+                    }
+                }
+                if (hex.Contains(";"))
+                {
+                    try
+                    {
+                        var chars = hex.Split(new[] { ";" }, StringSplitOptions.None)[1].ToCharArray();
+                        var bytes = new List<byte>();
+                        for (int index = 0; index < chars.Length; index += 2)
+                        {
+
+                            if (index + 2 <= chars.Length)
+                            {
+                                var chunk = new string(chars, index, 2);
+                                bytes.Add(byte.Parse(chunk, NumberStyles.AllowHexSpecifier));
+                            }
+
+                        }
+                        return bytes.ToArray();
+                    }
+                    catch
+                    {
+                        // Ignored.
+                    }
+                }
+                if (hex.Contains(")"))
+                {
+                    try
+                    {
+                        var chars = hex.Replace(")", "").ToCharArray();
+                        var bytes = new List<byte>();
+                        for (int index = 0; index < chars.Length; index += 2)
+                        {
+
+                            if (index + 2 <= chars.Length)
+                            {
+                                var chunk = new string(chars, index, 2);
+                                bytes.Add(byte.Parse(chunk, NumberStyles.AllowHexSpecifier));
+                            }
+
+                        }
+                        return bytes.ToArray();
+
+                    }
+                    catch
+                    {
+                        // Ignored.
+                    }
+                }
+
+                Debug.WriteLine("Error on hex string: " + hex);
+                return null;
+            }
+        }
+
+
+        private static Regex _regexEmail = new Regex(@"^[\w.-]+@(?=[a-z\d][^.]*\.)[a-z\d.-]*[^.]$");
+
+        private static List<string> _listEmailProvider = new List<string>()
+        {
+            ".com",
+            ".fr",
+            ".net",
+            ".ru",
+            ".co.uk",
+            ".edu",
+            ".co.nz",
+            ".net",
+            ".nl",
+            ".ru",
+
+        };
+
+        private static List<string> _listDomain = new List<string>()
+        {
+            ".au",
+            ".fr",
+            ".com",
+            ".cn",
+            ".ph",
+            ".hk",
+            ".br",
+            ".sg",
+            ".es",
+            ".ua",
+            ".nz",
+            ".il",
+            ".de",
+            ".my",
+            ".in",
+            ".edu",
+            ".mk",
+            ".ua",
+            ".ar",
+            ".vn",
+            ".mx",
+            ".co",
+            ".be",
+            ".tr",
+            ".uk",
+            ".tw",
+            ".com.mx",
+            ".pl",
+            ".jo",
+            ".sa",
+            ".ng",
+            ".ms",
+            ".fj",
+            ".jp",
+            ".pk",
+            ".ba",
+            ".it",
+            ".ae",
+            ".mt",
+            ".lb",
+            ".qa",
+            "b.org",
+            ".org",
+            ".gr",
+            ".us",
+            ".pa",
+            ".ec",
+            ".sa",
+            ".na",
+            ".kh",
+            ".pe",
+            ".pk",
+            "@gmail.com",
+            "gmail.com",
+            ".bo",
+            ".tn",
+            ".vc",
+            ".ve",
+            ".gh",
+            ".ci",
+            ".ec",
+            ".eg",
+            "@hotmail.com",
+            "@hotmail.co",
+            "@hotmail",
+            "hotmail",
+            ".pt",
+            ".np",
+            ".net",
+            ".se",
+            ".ch",
+            ".ru",
+        };
+
+        private static bool IsEmail(string line, out bool fixedLine, out string newLine)
+        {
+
+            fixedLine = false;
+            newLine = string.Empty;
+            Match match = _regexEmail.Match(line);
+            if (match.Success)
+            {
+                Dictionary<string, int> validProvider = new Dictionary<string, int>();
+                foreach (var provider in _listEmailProvider)
+                {
+                    if (line.Contains(provider))
+                    {
+                        if (!validProvider.ContainsKey(provider))
+                            validProvider.Add(provider, 0);
+                        
+                    }
+                }
+
+                if (validProvider.Count > 0)
+                {
+                    var providerListMaxLength = validProvider.Keys.OrderBy(x => x.Length);
+
+
+                    var splitLine = line.Split(new[] { providerListMaxLength.Last() }, StringSplitOptions.None);
+                    if (splitLine.Length == 2)
+                    {
+
+                        if (splitLine[1].Contains(":"))
+                        {
+                            var splitLineTwo = splitLine[1].Split(new[] { ":" }, StringSplitOptions.None);
+
+                            if (splitLineTwo.Length == 2)
+                            {
+                                if (splitLineTwo[1].Length > 3)
+                                {
+
+                                    Match matchNewLine = _regexEmail.Match(splitLineTwo[1]);
+
+                                    if (!matchNewLine.Success)
+                                    {
+                                        bool isInvalid = false;
+                                        foreach (var dom in _listDomain)
+                                        {
+                                            if (dom == splitLineTwo[1])
+                                            {
+                                                isInvalid = true;
+                                                break;
+                                            }
+                                        }
+
+                                        if (!isInvalid)
+                                        {
+                                            fixedLine = true;
+                                            newLine = splitLineTwo[1];
+                                            if (newLine.StartsWith(".mx") && line.Contains(".com.mx"))
+                                            {
+                                                newLine = newLine.Replace(".mx", "");
+                                            }
+                                            newLine = new string(newLine.Where(c => !char.IsControl(c)).ToArray());
+                                            newLine = RemoveControlCharacter(newLine);
+
+                                            if (CheckWord(newLine) && newLine.Length > 0)
+                                            {
+                                                isInvalid = false;
+                                                foreach (var dom in _listDomain)
+                                                {
+                                                    if (dom == newLine)
+                                                    {
+                                                        isInvalid = true;
+                                                        break;
+                                                    }
+                                                }
+                                                if (!isInvalid)
+                                                {
+                                                    return true;
+                                                }
+                                            }
+
+                                            fixedLine = false;
+                                        }
+                                    }
+
+                                }
+
+                            }
+                        }
+                        else
+                        {
+                            if (splitLine[1].Length > 3)
+                            {
+
+                                Match matchNewLine = _regexEmail.Match(splitLine[1]);
+
+                                if (!matchNewLine.Success)
+                                {
+                                    bool isInvalid = false;
+                                    foreach (var dom in _listDomain)
+                                    {
+                                        if (dom == splitLine[1])
+                                        {
+                                            isInvalid = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!isInvalid)
+                                    {
+                                        fixedLine = true;
+                                        newLine = splitLine[1];
+                                        if (newLine.StartsWith(".mx") && line.Contains(".com.mx"))
+                                        {
+                                            newLine = newLine.Replace(".mx", "");
+                                        }
+                                        newLine = new string(newLine.Where(c => !char.IsControl(c)).ToArray());
+
+                                        if (CheckWord(newLine) && newLine.Length > 0)
+                                        {
+                                            isInvalid = false;
+                                            foreach (var dom in _listDomain)
+                                            {
+                                                if (dom == newLine)
+                                                {
+                                                    isInvalid = true;
+                                                    break;
+                                                }
+                                            }
+                                            if (!isInvalid)
+                                            {
+                                                return true;
+                                            }
+                                        }
+
+                                        fixedLine = false;
+
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                }
+
+
+                var foo = new EmailAddressAttribute();
+                if (foo.IsValid(line))
+                {
+                    if (line.Contains(":"))
+                    {
+                        var splitLine = line.Split(new[] { ":" }, StringSplitOptions.None);
+                        if (splitLine.Length == 2)
+                        {
+                            if (splitLine[1].Length > 3)
+                            {
+                                Match matchNewLine = _regexEmail.Match(splitLine[1]);
+
+                                if (!matchNewLine.Success)
+                                {
+                                    bool isInvalid = false;
+                                    foreach (var dom in _listDomain)
+                                    {
+                                        if (dom == splitLine[1])
+                                        {
+                                            isInvalid = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!isInvalid)
+                                    {
+                                        fixedLine = true;
+                                        newLine = splitLine[1];
+                                        if (newLine.StartsWith(".mx") && line.Contains(".com.mx"))
+                                        {
+                                            newLine = newLine.Replace(".mx", "");
+                                        }
+                                        newLine = new string(newLine.Where(c => !char.IsControl(c)).ToArray());
+
+                                        newLine = RemoveControlCharacter(newLine);
+
+                                        if (CheckWord(newLine) && newLine.Length > 0)
+                                        {
+                                            isInvalid = false;
+                                            foreach (var dom in _listDomain)
+                                            {
+                                                if (dom == newLine)
+                                                {
+                                                    isInvalid = true;
+                                                    break;
+                                                }
+                                            }
+                                            if (!isInvalid)
+                                            {
+                                                return true;
+                                            }
+                                        }
+
+                                        fixedLine = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    fixedLine = false;
+                    newLine = string.Empty;
+                    return true;
+                }
+
+                if (line.Contains("@") && line.Contains("."))
+                {
+                    bool email = false;
+
+                    foreach (var tld in _listDomain)
+                    {
+                        if (line.Contains(tld))
+                        {
+                            email = true;
+                            break;
+                        }
+                    }
+
+                    if (email)
+                    {
+                        if (line.Contains(":"))
+                        {
+                            var splitLine = line.Split(new[] { ":" }, StringSplitOptions.None);
+                            if (splitLine.Length == 2)
+                            {
+                                if (splitLine[1].Length > 3)
+                                {
+                                    Match matchNewLine = _regexEmail.Match(splitLine[1]);
+
+                                    if (!matchNewLine.Success)
+                                    {
+                                        bool isInvalid = false;
+                                        foreach (var dom in _listDomain)
+                                        {
+                                            if (dom == splitLine[1])
+                                            {
+                                                isInvalid = true;
+                                                break;
+                                            }
+                                        }
+
+                                        if (!isInvalid)
+                                        {
+                                            fixedLine = true;
+                                            newLine = splitLine[1];
+                                            if (newLine.StartsWith(".mx") && line.Contains(".com.mx"))
+                                            {
+                                                newLine = newLine.Replace(".mx", "");
+                                            }
+                                            newLine = new string(newLine.Where(c => !char.IsControl(c)).ToArray());
+                                            newLine = RemoveControlCharacter(newLine);
+
+                                            if (CheckWord(newLine) && newLine.Length > 0)
+                                            {
+                                                isInvalid = false;
+                                                foreach (var dom in _listDomain)
+                                                {
+                                                    if (dom == newLine)
+                                                    {
+                                                        isInvalid = true;
+                                                        break;
+                                                    }
+                                                }
+                                                if (!isInvalid)
+                                                {
+                                                    return true;
+                                                }
+                                            }
+
+                                            fixedLine = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+
+
+                        fixedLine = false;
+                        newLine = string.Empty;
+                        return true;
+                    }
+                }
+
+
+            }
+
+
+            if (line.Contains("@") && line.Contains("."))
+            {
+                bool email = false;
+
+                foreach (var tld in _listDomain)
+                {
+                    if (line.Contains(tld))
+                    {
+                        email = true;
+                        break;
+                    }
+                }
+
+                if (email)
+                {
+                    if (line.Contains(":"))
+                    {
+                        var splitLine = line.Split(new[] { ":" }, StringSplitOptions.None);
+                        if (splitLine.Length == 2)
+                        {
+                            if (splitLine[1].Length > 3)
+                            {
+                                Match matchNewLine = _regexEmail.Match(splitLine[1]);
+
+                                if (!matchNewLine.Success)
+                                {
+                                    bool isInvalid = false;
+                                    foreach (var dom in _listDomain)
+                                    {
+                                        if (dom == splitLine[1])
+                                        {
+                                            isInvalid = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!isInvalid)
+                                    {
+                                        fixedLine = true;
+                                        newLine = splitLine[1];
+                                        if (newLine.StartsWith(".mx") && line.Contains(".com.mx"))
+                                        {
+                                            newLine = newLine.Replace(".mx", "");
+                                        }
+                                        newLine = new string(newLine.Where(c => !char.IsControl(c)).ToArray());
+                                        newLine = RemoveControlCharacter(newLine);
+
+                                        if (CheckWord(newLine) && newLine.Length > 0)
+                                        {
+                                            isInvalid = false;
+                                            foreach (var dom in _listDomain)
+                                            {
+                                                if (dom == newLine)
+                                                {
+                                                    isInvalid = true;
+                                                    break;
+                                                }
+                                            }
+                                            if (!isInvalid)
+                                            {
+                                                return true;
+                                            }
+                                        }
+
+                                        fixedLine = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    fixedLine = false;
+                    newLine = string.Empty;
+                    return true;
+                }
+            }
+
+
+
+            return false;
+        }
+
+        private static bool CheckWord(string line)
+        {
+
+            if (line.Contains("Р°") && line.Contains("РS"))
+            {
+                return false;
+            }
+
+            if (line.Contains("Ð°"))
+            {
+                return false;
+            }
+
+            int digit = 0;
+            int letter = 0;
+            int punctuation = 0;
+            int symbol = 0;
+
+            foreach (var character in line)
+            {
+                if (char.IsDigit(character))
+                {
+                    digit++;
+                }
+                if (char.IsPunctuation(character))
+                {
+                    punctuation++;
+                }
+                if (char.IsLetter(character))
+                {
+                    letter++;
+                }
+                if (char.IsSymbol(character))
+                {
+                    symbol++;
+                }
+            }
+
+            if (digit > 0 || letter > 0 || punctuation > 0 || symbol > 0)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        #endregion
     }
 
 }
